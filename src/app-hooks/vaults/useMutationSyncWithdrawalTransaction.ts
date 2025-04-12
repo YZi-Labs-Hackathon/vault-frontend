@@ -1,12 +1,12 @@
 import { VaultApi } from '@/app-services/api';
 import { useMutation } from '@tanstack/react-query';
 
-export const useMutationSyncDepositTransaction = (options?: {
+export const useMutationSyncWithdrawalTransaction = (options?: {
 	onSuccess?: () => void;
 	onError?: (error: Error) => void;
 }) => {
 	return useMutation({
-		mutationKey: ['mutation-vault-sync-deposit-transaction'],
+		mutationKey: ['mutation-vault-sync-withdrawal-transaction'],
 		onError: options?.onError,
 		onSuccess: options?.onSuccess,
 		mutationFn: async ({
@@ -16,7 +16,7 @@ export const useMutationSyncDepositTransaction = (options?: {
 			vaultAddress: string;
 			txHash: string;
 		}) => {
-			await VaultApi.syncDepositTransaction(vaultAddress, txHash);
+			await VaultApi.syncWithdrawalTransaction(vaultAddress, txHash);
 		},
 	});
 };

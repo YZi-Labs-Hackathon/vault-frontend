@@ -1,12 +1,18 @@
 import { CHAIN, getSignerFromAccount } from '@/app-contexts/thirdweb';
+import { getErrorMessage } from '@/app-helpers/errors';
+import { delay, get } from '@/app-helpers/misc';
 import { ChatSession } from '@/app-services/chat-session';
-import { ChatMessage } from '@/app-types/ai-agent';
-import { useCallback, useEffect, useState } from 'react';
+import { ChatAction, ChatMessage, NEED_RETRY_ACTIONS } from '@/app-types/ai-agent';
+import { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { useActiveAccount } from 'thirdweb/react';
+import { useOnEventCallback } from '../common';
+import {
+	useMutationSyncCreateVaultTransaction,
+	useMutationSyncDepositTransaction,
+	useMutationSyncWithdrawalTransaction,
+} from '../vaults';
 import { useMutationSendChatMessage } from './useMutationSendChatMessage';
-import { get } from '@/app-helpers/misc';
-import { getErrorMessage } from '@/app-helpers/errors';
 
 interface UseChatSessionOptions {
 	persistEnabled?: boolean;
@@ -29,6 +35,11 @@ export const useChatSession = (
 	const account = useActiveAccount();
 
 	const { mutateAsync: sendChatMessage } = useMutationSendChatMessage();
+	const { mutateAsync: syncDepositTransaction } = useMutationSyncDepositTransaction();
+	const { mutateAsync: syncWithdrawalTransaction } =
+		useMutationSyncWithdrawalTransaction();
+	const { mutateAsync: syncCreateVaultTransaction } =
+		useMutationSyncCreateVaultTransaction();
 
 	const [chatSession, setChatSession] = useState<ChatSession | null>(null);
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -65,7 +76,7 @@ export const useChatSession = (
 		}
 	}, [chatSession, messages, persistEnabled]);
 
-	const sendAndWaitForChatResponse = async (message: string) => {
+	const sendAndWaitForChatResponse = useOnEventCallback(async (message: string) => {
 		try {
 			setIsThinking(true);
 
@@ -82,6 +93,8 @@ export const useChatSession = (
 				botMsg.action = {
 					data: response.dataToSign,
 					target: response.contractAddress,
+					actionName: response.action ?? '',
+					customParams: response.customParams ?? {},
 				};
 			}
 
@@ -99,7 +112,7 @@ export const useChatSession = (
 		} finally {
 			setIsThinking(false);
 		}
-	};
+	});
 
 	const commitMessageDraft = async () => {
 		const trimmed = messageDraft.trim();
@@ -127,43 +140,104 @@ export const useChatSession = (
 		setMessages(updatedMessages);
 	};
 
-	const executeAction = useCallback(
-		async (message: ChatMessage) => {
-			try {
-				console.debug('message', message);
-				if (!message.action || !account) return;
+	const settleActionExecution = useOnEventCallback(
+		async (
+			txHash: string,
+			actionName: ChatAction | string,
+			customParams: Record<string, any> = {},
+		) => {
+			if (NEED_RETRY_ACTIONS.includes(actionName)) {
+				sendAndWaitForChatResponse('retry');
+				return;
+			}
 
-				const { data, target } = message.action;
-				const signer = await getSignerFromAccount(account);
-				const tx = await signer.sendTransaction({
-					to: target,
-					data: data,
-				});
-				await tx.wait();
+			switch (actionName as ChatAction) {
+				case 'createVault': {
+					syncCreateVaultTransaction({
+						chainId: CHAIN.id,
+						txHash,
+					});
+					break;
+				}
 
-				// Action should be no longer valid and exist in message
-				deleteActionOfMessage(message);
+				case 'deposit': {
+					const { vaultContract } = customParams;
+					vaultContract &&
+						syncDepositTransaction({
+							vaultAddress: vaultContract,
+							txHash,
+						});
+					break;
+				}
 
-				setTimeout(() => {
-					const explorerUrl = get(CHAIN, (d) => d.blockExplorers[0].url, '');
-					const successBotMsg: ChatMessage = {
-						id: Date.now() + 1,
-						from: 'bot',
-						content: [
-							`Transaction sent successfully! View it on explorer:`,
-							`[${tx.hash}](${explorerUrl}/tx/${tx.hash})`,
-						],
-						typingAnimation: false,
-					};
-					setMessages((prev) => [...prev, successBotMsg]);
-				}, 500);
-			} catch (e) {
-				console.error(e);
-				toast.error(`Failed to execute action: ${getErrorMessage(e)}`);
+				case 'withdraw': {
+					const { vaultContract } = customParams;
+					vaultContract &&
+						syncWithdrawalTransaction({
+							vaultAddress: vaultContract,
+							txHash,
+						});
+					break;
+				}
+
+				default:
+					break;
 			}
 		},
-		[account, setMessages],
 	);
+
+	const executeAction = useOnEventCallback(async (message: ChatMessage) => {
+		try {
+			if (!message.action || !account) return;
+
+			const { data, target, actionName, customParams } = message.action;
+			const signer = await getSignerFromAccount(account);
+			const tx = await signer.sendTransaction({
+				to: target,
+				data: data,
+			});
+			const receipt = await tx.wait();
+			const isSuccess = receipt.status === 1;
+
+			// Action should be no longer valid and exist in message
+			deleteActionOfMessage(message);
+			await delay(500);
+
+			const explorerUrl = get(CHAIN, (d) => d.blockExplorers[0].url, '');
+			let resultMsg: ChatMessage;
+			if (isSuccess) {
+				resultMsg = {
+					id: Date.now() + 1,
+					from: 'bot',
+					content: [
+						`Transaction sent successfully! View it on explorer:`,
+						`[${tx.hash}](${explorerUrl}/tx/${tx.hash})`,
+					],
+					typingAnimation: false,
+				};
+			} else {
+				resultMsg = {
+					id: Date.now() + 1,
+					from: 'bot',
+					content: [
+						`Transaction failed! Inspect it on explorer:`,
+						`[${tx.hash}](${explorerUrl}/tx/${tx.hash})`,
+					],
+					typingAnimation: false,
+				};
+			}
+
+			setMessages((prev) => [...prev, resultMsg]);
+
+			if (isSuccess) {
+				await delay(500);
+				settleActionExecution(tx.hash, actionName, customParams);
+			}
+		} catch (e) {
+			console.error(e);
+			toast.error(`Failed to execute action: ${getErrorMessage(e)}`);
+		}
+	});
 
 	return {
 		messages,

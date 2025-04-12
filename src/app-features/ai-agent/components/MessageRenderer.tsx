@@ -91,12 +91,7 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({
 						key={i}
 						components={{
 							img: ({ alt, src }) => (
-								<img
-									src={src ?? ''}
-									alt={alt ?? ''}
-									loading="lazy"
-									style={{ maxWidth: '100%', height: 'auto', borderRadius: 6 }}
-								/>
+								<img src={src ?? ''} alt={alt ?? ''} loading="lazy" />
 							),
 							a: ({ href, children }) => (
 								<a

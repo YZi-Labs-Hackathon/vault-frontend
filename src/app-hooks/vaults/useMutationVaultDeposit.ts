@@ -3,7 +3,7 @@ import { EVMVault__factory } from '@/app-typechains';
 import { useMutation } from '@tanstack/react-query';
 import { useActiveAccount } from 'thirdweb/react';
 import { z } from 'zod';
-import useMutationSyncDepositTransaction from './useMutationSyncDepositTransaction';
+import { useMutationSyncDepositTransaction } from './useMutationSyncDepositTransaction';
 import useMutationVaultDepositSignature from './useMutationVaultDepositSignature';
 
 const zUseVaultDepositParams = z.object({
@@ -57,7 +57,10 @@ export const useMutationVaultDeposit = () => {
 				throw new Error('Transaction hash not found');
 			}
 
-			syncTransaction({ vaultAddress: params.vaultAddress, txHash });
+			syncTransaction({
+				vaultAddress: params.vaultAddress,
+				txHash,
+			});
 			return txHash;
 		},
 	});

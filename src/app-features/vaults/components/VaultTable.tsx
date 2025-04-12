@@ -18,7 +18,6 @@ const VaultTable = () => {
 				({
 					name: vault.name,
 					tvl: vault.tvl,
-					age: vault.age,
 					pnl: vault.allTimePnl,
 					userPnl: vault.yourPnl,
 					userDeposit: vault.yourDeposit,

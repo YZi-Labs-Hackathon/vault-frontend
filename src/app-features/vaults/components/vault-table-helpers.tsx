@@ -7,7 +7,6 @@ import Link from 'next/link';
 export interface IVaultTableItem {
 	name: string;
 	tvl: string;
-	age: number;
 	pnl?: string;
 	userPnl?: string;
 	userDeposit?: string;
@@ -41,13 +40,6 @@ export const getVaultTableColumns = () => {
 			cell: (info) => {
 				const tvl = info.getValue() ?? '0';
 				return `${formatCurrency(tvl)}`;
-			},
-		}),
-
-		columnHelper.accessor('age', {
-			header: () => 'Age',
-			cell: (info) => {
-				return `${info.getValue()} days`;
 			},
 		}),
 

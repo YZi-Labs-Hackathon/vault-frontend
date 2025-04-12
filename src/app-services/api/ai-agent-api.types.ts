@@ -9,4 +9,6 @@ export interface AIChatData {
 	requireSignature: boolean;
 	dataToSign: string;
 	contractAddress: string;
+	action?: string;
+	customParams?: Record<string, any>;
 }

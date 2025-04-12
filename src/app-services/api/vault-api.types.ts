@@ -47,6 +47,7 @@ export interface CreateVaultActionParams {
 	service: string;
 	to: string;
 	dataRaw: string;
+	vaultAddress: string;
 }
 
 export interface CreateVaultActionData {

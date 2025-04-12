@@ -73,6 +73,14 @@ class VaultApiService {
 		await axiosAPI.post(`/api/webhook/deposit/${vaultAddress}/${txHash}`);
 	}
 
+	public async syncWithdrawalTransaction(vaultAddress: string, txHash: string) {
+		await axiosAPI.post(`/api/webhook/withdraw/${vaultAddress}/${txHash}`);
+	}
+
+	public async syncCreateVaultTransaction(chainId: number, txHash: string) {
+		await axiosAPI.post(`/api/webhook/create-vault/${chainId}/${txHash}`);
+	}
+
 	public async createVaultAction(params: CreateVaultActionParams) {
 		const response = await axiosAPI.post<ApiResponse<CreateVaultActionData>>(
 			'/api/vault/action',

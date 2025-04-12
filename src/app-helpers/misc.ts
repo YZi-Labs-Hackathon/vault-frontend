@@ -142,3 +142,7 @@ export const sanitizeText = (text: string): string => {
 	if (!text) return '';
 	return DOMPurify.sanitize(text.trim());
 };
+
+export const delay = (ms: number) => {
+	return new Promise((resolve) => setTimeout(resolve, ms));
+};

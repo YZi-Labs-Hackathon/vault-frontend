@@ -1,7 +1,7 @@
 import { THINKING_MESSAGE, useChatSession } from '@/app-hooks/ai-agent';
 import { ChatMessage } from '@/app-types/ai-agent';
 import { noop } from 'lodash';
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Button, Card, Image, InputGroup } from 'react-bootstrap';
 import BeatLoader from 'react-spinners/BeatLoader';
 import { useActiveAccount } from 'thirdweb/react';
@@ -130,7 +130,6 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, vaultId }) => 
 						value={messageDraft}
 						onChange={(e) => setMessageDraft(e.target.value)}
 						onSubmit={commitMessageDraft}
-						disabled={isInputControlsDisabled}
 					/>
 
 					<Button
