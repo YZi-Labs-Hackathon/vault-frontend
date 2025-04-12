@@ -1,4 +1,3 @@
-export * from './useChangeLanguage';
 export * from './useCopyToClipboard';
 export * from './useCoreTable';
 export * from './useFilterHandler';

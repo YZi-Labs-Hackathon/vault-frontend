@@ -28,7 +28,6 @@
 		"**/*.ts",
 		"**/*.tsx",
 		".next/types/**/*.ts",
-		"i18nConfig.ts",
 		"**/next-auth.d.ts"
 	],
 	"exclude": ["node_modules", ".next"]

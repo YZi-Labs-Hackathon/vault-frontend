@@ -6,7 +6,6 @@ import { ReactQueryProvider } from '@/app-contexts/react-query';
 import { TWProvider } from '@/app-contexts/thirdweb';
 import { ServerPropsWithLocale } from '@/app-types/common';
 import { Metadata, Viewport } from 'next';
-import i18nConfig from '../../i18n-config';
 import { ToastContainer } from 'react-toastify';
 
 export const viewport: Viewport = {
@@ -23,17 +22,11 @@ export const metadata: Metadata = {
 		'automate your trading effortlessly. explore, invest, and let AI optimize your returns!',
 };
 
-export function generateStaticParams() {
-	return i18nConfig.locales.map((locale) => ({ locale }));
-}
-
 export default async function RootLayout({
 	children,
-	params,
 }: ServerPropsWithLocale<{ children: React.ReactNode }, {}>) {
-	const { locale } = await params;
 	return (
-		<html lang={locale}>
+		<html lang="en">
 			<meta property="og:title" content="partnr vault" />
 
 			<meta

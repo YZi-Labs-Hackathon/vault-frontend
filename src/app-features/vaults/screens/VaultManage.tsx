@@ -1,6 +1,7 @@
 'use client';
 import { PageContainer } from '@/app-components/layout/PageContainer';
 import { getSignerFromAccount } from '@/app-contexts/thirdweb';
+import ChatWidget from '@/app-features/ai-agent/components/ChatWidget';
 import { areAddressesEqual, getShortAddress } from '@/app-helpers/address';
 import { getErrorMessage } from '@/app-helpers/errors';
 import { get } from '@/app-helpers/misc';
@@ -258,6 +259,8 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 					</Card.Body>
 				</Card>
 			</Container>
+
+			<ChatWidget />
 		</PageContainer>
 	);
 };
