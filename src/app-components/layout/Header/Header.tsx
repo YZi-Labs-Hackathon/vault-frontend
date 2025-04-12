@@ -12,8 +12,8 @@ export default function Header() {
 					<Navbar.Toggle aria-controls="basic-navbar-nav" />
 					<Navbar.Collapse id="basic-navbar-nav">
 						<Nav className="mx-auto">
-							<Nav.Link href="/">Explorer</Nav.Link>
-							<Nav.Link href="/">My Vault</Nav.Link>
+							<Nav.Link href="/">Explore Vaults</Nav.Link>
+							{/* <Nav.Link href="/">My Vault</Nav.Link> */}
 						</Nav>
 					</Navbar.Collapse>
 					<div>

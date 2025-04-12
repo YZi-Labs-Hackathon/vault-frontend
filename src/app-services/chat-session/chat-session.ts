@@ -1,4 +1,5 @@
-import { ChatMessage } from '@/app-types/ai-agent';
+import { ChatMessage, serializeChatMessage } from '@/app-types/ai-agent';
+import { isArray } from 'lodash';
 import { v4 as uuid } from 'uuid';
 
 export class ChatSession {
@@ -27,7 +28,10 @@ export class ChatSession {
 	}
 
 	public persist(messages: ChatMessage[]) {
-		localStorage.setItem(this.chatKey(), JSON.stringify(messages));
+		localStorage.setItem(
+			this.chatKey(),
+			JSON.stringify(messages.map(serializeChatMessage)),
+		);
 	}
 
 	public insertOne(message: ChatMessage) {
@@ -43,7 +47,8 @@ export class ChatSession {
 				{
 					id: Date.now(),
 					from: 'bot',
-					text: 'Hello there, what can I help you?',
+					content: ['Hello there, what can I help you?'],
+					typingAnimation: true,
 				},
 			];
 			this.persist(defaultMessages);
@@ -56,7 +61,15 @@ export class ChatSession {
 		try {
 			const messages = localStorage.getItem(this.chatKey());
 			if (messages) {
-				return JSON.parse(messages) as ChatMessage[];
+				const parsed = JSON.parse(messages);
+				if (isArray(parsed)) {
+					return parsed.map((msg: any) => ({
+						id: msg.id,
+						from: msg.from,
+						content: msg.content,
+						typingAnimation: false,
+					}));
+				}
 			}
 		} catch (e) {}
 		return [];

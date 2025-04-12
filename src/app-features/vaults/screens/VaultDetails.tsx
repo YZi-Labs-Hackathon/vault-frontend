@@ -2,6 +2,7 @@
 
 import { ExpandableDescription } from '@/app-components/common/ExpandableDescription';
 import { PageContainer } from '@/app-components/layout/PageContainer';
+import ChatWidget from '@/app-features/ai-agent/components/ChatWidget';
 import { areAddressesEqual, getShortAddress } from '@/app-helpers/address';
 import { formatCurrency } from '@/app-helpers/number';
 import { useQueryVaultDetails } from '@/app-hooks/vaults';
@@ -37,7 +38,7 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 		return areAddressesEqual(account.address, vault.creator.address);
 	};
 
-	if (!vault || isLoading) {
+	if (!vault) {
 		return (
 			<div
 				className="w-full d-flex justify-content-center align-items-center"
@@ -141,6 +142,8 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 					</Col>
 				</Row>
 			</Container>
+
+			<ChatWidget vaultId={vault.id} />
 		</PageContainer>
 	);
 };

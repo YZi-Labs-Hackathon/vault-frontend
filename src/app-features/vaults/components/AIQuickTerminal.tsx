@@ -3,54 +3,73 @@
 import { ChatSession } from '@/app-services/chat-session';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
-import { Button, Form, InputGroup } from 'react-bootstrap';
+import React, { useEffect, useRef, useState } from 'react';
+import { Button, Form, InputGroup, Spinner } from 'react-bootstrap';
 
 const AIQuickTerminal = () => {
 	const router = useRouter();
 	const [chatText, setChatText] = useState('');
 	const [placeholder, setPlaceholder] = useState('');
+	const [isLoading, setIsLoading] = useState(false);
+
 	const placeholders = [
 		"Help me find vaults that's fit to me",
 		'Create a vault please',
 		'What is my TVL now?',
 	];
-	let typingIndex = 0;
-	let charIndex = 0;
-	let isDeleting = false;
+
+	// Use refs for mutable values that don't trigger re-renders
+	const typingIndexRef = useRef(0);
+	const charIndexRef = useRef(0);
+	const isDeletingRef = useRef(false);
+	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+	const type = () => {
+		const currentText = placeholders[typingIndexRef.current];
+		let delay = 50;
+
+		if (!isDeletingRef.current) {
+			// Typing
+			charIndexRef.current++;
+			setPlaceholder(currentText.slice(0, charIndexRef.current));
+
+			if (charIndexRef.current === currentText.length) {
+				isDeletingRef.current = true;
+				delay = 1500; // Wait before deleting
+			}
+		} else {
+			// Deleting
+			charIndexRef.current--;
+			setPlaceholder(currentText.slice(0, charIndexRef.current));
+
+			if (charIndexRef.current === 0) {
+				isDeletingRef.current = false;
+				typingIndexRef.current = (typingIndexRef.current + 1) % placeholders.length;
+				delay = 500; // Wait before typing next sentence
+			}
+		}
+
+		timeoutRef.current = setTimeout(type, delay);
+	};
 
 	useEffect(() => {
-		const interval = setInterval(() => {
-			const current = placeholders[typingIndex];
-			if (!isDeleting) {
-				setPlaceholder(current.slice(0, charIndex + 1));
-				charIndex++;
+		type(); // Start typing animation
 
-				if (charIndex === current.length) {
-					isDeleting = true;
-					setTimeout(() => {}, 2000); // pause before delete
-				}
-			} else {
-				setPlaceholder(current.slice(0, charIndex - 1));
-				charIndex--;
-
-				if (charIndex === 0) {
-					isDeleting = false;
-					typingIndex = (typingIndex + 1) % placeholders.length;
-				}
-			}
-		}, 50);
-
-		return () => clearInterval(interval);
+		return () => {
+			// Clean up timeout
+			if (timeoutRef.current) clearTimeout(timeoutRef.current);
+		};
 	}, []);
 
-	const startChat = () => {
+	const startChat = async () => {
 		if (!chatText) return;
+		setIsLoading(true);
+		await new Promise((resolve) => setTimeout(resolve, 0));
 		const session = ChatSession.create();
 		session.insertOne({
 			id: Date.now(),
 			from: 'user',
-			text: chatText,
+			content: [chatText],
 		});
 		router.push(`/ai-agent/chat/${session.getSessionId()}`);
 	};
@@ -77,9 +96,10 @@ const AIQuickTerminal = () => {
 						maxLength={100}
 						onKeyDown={onInputEnter}
 						onChange={(e) => setChatText(e.target.value)}
+						disabled={isLoading}
 					/>
-					<Button variant="outline-secondary" onClick={startChat}>
-						Send
+					<Button disabled={isLoading} variant="outline-secondary" onClick={startChat}>
+						{!isLoading ? 'Send' : <Spinner size="sm" style={{ borderWidth: '2px' }} />}
 					</Button>
 				</InputGroup>
 			</div>

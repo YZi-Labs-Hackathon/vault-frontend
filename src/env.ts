@@ -2,6 +2,7 @@ export const env = {
 	NEXT_PUBLIC_ENV: process.env.NEXT_PUBLIC_ENV as string,
 	NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL as string,
 	NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL as string,
+	NEXT_PUBLIC_AI_AGENT_API_URL: process.env.NEXT_PUBLIC_AI_AGENT_API_URL as string,
 	NEXT_PUBLIC_REOWN_PROJECT_ID: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID as string,
 	NEXT_PUBLIC_CMC_API: process.env.NEXT_PUBLIC_CMC_API as string,
 	NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET as string,

@@ -29,7 +29,7 @@ const VaultTable = () => {
 
 	return (
 		<Table
-			isLoading={isLoading}
+			isLoading={isLoading && vaultTableData.length === 0}
 			bordered
 			columns={getVaultTableColumns()}
 			data={vaultTableData}
