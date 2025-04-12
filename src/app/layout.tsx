@@ -35,13 +35,7 @@ export default async function RootLayout({
 			/>
 
 			<body suppressHydrationWarning>
-				<NProgressProvider>
-					<ReactQueryProvider>
-						<FeatureFlagProvider>
-							<TWProvider>{children}</TWProvider>
-						</FeatureFlagProvider>
-					</ReactQueryProvider>
-				</NProgressProvider>
+				{children}
 
 				<ToastContainer
 					theme="light"

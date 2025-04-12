@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface MessageRendererProps {
 	content: string[] | React.ReactNode;
-	charDelay?: number; // delay per character (ms)
-	lineDelay?: number; // delay after line completes (ms)
+	charDelay?: number;
+	lineDelay?: number;
 	animateChar?: boolean;
 	onAnimateStart?: () => void;
 	onAnimateDone?: () => void;
@@ -79,16 +80,51 @@ const MessageRenderer: React.FC<MessageRendererProps> = ({
 		onAnimateDone,
 	]);
 
+	const renderMarkdown = (text: string, key?: React.Key) => {
+		// Split on markdown image patterns, keep raw links handled by markdown itself
+		const parts = text.split(/(\!\[[^\]]*\]\([^\)]+\))/g);
+
+		return (
+			<div key={key} className="line text-break">
+				{parts.map((part, i) => (
+					<ReactMarkdown
+						key={i}
+						components={{
+							img: ({ alt, src }) => (
+								<img
+									src={src ?? ''}
+									alt={alt ?? ''}
+									loading="lazy"
+									style={{ maxWidth: '100%', height: 'auto', borderRadius: 6 }}
+								/>
+							),
+							a: ({ href, children }) => (
+								<a
+									href={href}
+									target="_blank"
+									rel="noopener noreferrer"
+									style={{ color: '#0d6efd', textDecoration: 'underline' }}
+								>
+									{children}
+								</a>
+							),
+						}}
+					>
+						{part}
+					</ReactMarkdown>
+				))}
+			</div>
+		);
+	};
+
 	if (typeof content !== 'string' && !Array.isArray(content)) {
 		return <>{content}</>;
 	}
 
 	return (
-		<div>
-			{displayedLines.map((line, i) => (
-				<div key={i}>{line}</div>
-			))}
-			{animateChar && currentLine && <div>{currentLine}</div>}
+		<div className="chat-reply-content">
+			{displayedLines.map((line, i) => renderMarkdown(line, i))}
+			{animateChar && currentLine && renderMarkdown(currentLine)}
 		</div>
 	);
 };

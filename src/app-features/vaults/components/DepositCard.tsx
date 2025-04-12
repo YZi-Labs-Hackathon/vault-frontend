@@ -80,18 +80,14 @@ const DepositSection: React.FC<DepositSectionProps> = ({ vault }) => {
 	});
 
 	const approveTokenForDeposit = async (approvalAmount: BigNumber, signer: Signer) => {
-		try {
-			const erc20 = ERC20__factory.connect(vault.token.address, signer);
-			const allowance = await erc20.allowance(account!.address, vault.contractAddress);
-			if (allowance.gte(approvalAmount)) {
-				return;
-			}
-
-			const tx = await erc20.approve(vault.contractAddress, approvalAmount);
-			await tx.wait();
-		} catch (e) {
-			toast.error(getErrorMessage(e));
+		const erc20 = ERC20__factory.connect(vault.token.address, signer);
+		const allowance = await erc20.allowance(account!.address, vault.contractAddress);
+		if (allowance.gte(approvalAmount)) {
+			return;
 		}
+
+		const tx = await erc20.approve(vault.contractAddress, approvalAmount);
+		await tx.wait();
 	};
 
 	return (

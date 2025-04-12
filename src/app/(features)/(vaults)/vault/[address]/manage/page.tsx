@@ -1,9 +1,13 @@
+'use client';
+import { NoSsrLayout } from '@/app-components/layout/NoSsrLayout';
 import VaultManage from '@/app-features/vaults/screens/VaultManage';
-import { ServerPropsWithLocale } from '@/app-types/common';
+import { useParams } from 'next/navigation';
 
-export default async function VaultManagePage({
-	params,
-}: ServerPropsWithLocale<{}, { address: string }>) {
-	const { address } = await params;
-	return <VaultManage address={address} />;
+export default async function VaultManagePage() {
+	const { address } = useParams<{ address: string }>();
+	return (
+		<NoSsrLayout>
+			<VaultManage address={address} />
+		</NoSsrLayout>
+	);
 }

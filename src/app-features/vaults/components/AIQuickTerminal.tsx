@@ -1,5 +1,7 @@
 'use client';
 
+import { useAuthContext } from '@/app-contexts/auth';
+import { useWeb3Wallet } from '@/app-contexts/thirdweb';
 import { ChatSession } from '@/app-services/chat-session';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -12,6 +14,9 @@ const AIQuickTerminal = () => {
 	const [placeholder, setPlaceholder] = useState('');
 	const [isLoading, setIsLoading] = useState(false);
 
+	const { connect, account, connectionStatus } = useWeb3Wallet();
+	const { session } = useAuthContext();
+
 	const placeholders = [
 		"Help me find vaults that's fit to me",
 		'Create a vault please',
@@ -23,6 +28,7 @@ const AIQuickTerminal = () => {
 	const charIndexRef = useRef(0);
 	const isDeletingRef = useRef(false);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+	const startChatFnRef = useRef<(() => void) | null>(null);
 
 	const type = () => {
 		const currentText = placeholders[typingIndexRef.current];
@@ -52,6 +58,37 @@ const AIQuickTerminal = () => {
 		timeoutRef.current = setTimeout(type, delay);
 	};
 
+	const startChat = async () => {
+		if (!chatText) return;
+
+		const startChatFn = async () => {
+			setIsLoading(true);
+			await new Promise((resolve) => setTimeout(resolve, 0));
+			const session = ChatSession.create();
+			session.insertOne({
+				id: Date.now(),
+				from: 'user',
+				content: [chatText],
+			});
+			router.push(`/ai-agent/chat/${session.getSessionId()}`);
+		};
+
+		if (!account) {
+			startChatFnRef.current = startChatFn;
+			await connect();
+			return;
+		}
+
+		startChatFn();
+	};
+
+	const onInputEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			startChat();
+		}
+	};
+
 	useEffect(() => {
 		type(); // Start typing animation
 
@@ -61,25 +98,12 @@ const AIQuickTerminal = () => {
 		};
 	}, []);
 
-	const startChat = async () => {
-		if (!chatText) return;
-		setIsLoading(true);
-		await new Promise((resolve) => setTimeout(resolve, 0));
-		const session = ChatSession.create();
-		session.insertOne({
-			id: Date.now(),
-			from: 'user',
-			content: [chatText],
-		});
-		router.push(`/ai-agent/chat/${session.getSessionId()}`);
-	};
-
-	const onInputEnter = (e: React.KeyboardEvent<HTMLInputElement>) => {
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			startChat();
+	useEffect(() => {
+		if (connectionStatus === 'connected' && session && !!startChatFnRef.current) {
+			startChatFnRef.current();
+			startChatFnRef.current = null;
 		}
-	};
+	}, [connectionStatus, session]);
 
 	return (
 		<div className="text-center">

@@ -1,5 +1,6 @@
 export interface AIChatParams {
 	message: string;
+	llmModel?: 'CLAUDE' | 'OPENAI';
 	vaultId?: string;
 }
 

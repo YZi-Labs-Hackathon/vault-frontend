@@ -67,6 +67,7 @@ export class ChatSession {
 						id: msg.id,
 						from: msg.from,
 						content: msg.content,
+						action: msg.action,
 						typingAnimation: false,
 					}));
 				}

@@ -2,51 +2,67 @@
 
 import { THINKING_MESSAGE, useChatSession } from '@/app-hooks/ai-agent';
 import { ChatSession } from '@/app-services/chat-session';
+import { ChatMessage } from '@/app-types/ai-agent';
+import { noop } from 'lodash';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useRef, useState } from 'react';
 import { Button, Card, Collapse, InputGroup } from 'react-bootstrap';
 import BeatLoader from 'react-spinners/BeatLoader';
+import { useActiveAccount } from 'thirdweb/react';
 import ChatInput from './ChatInput';
+import MessageAction from './MessageAction';
 import MessageRenderer from './MessageRenderer';
 
-// Chat bubbles
-const ChatLeft = ({ content, animateChar, onAnimateStart, onAnimateDone }) => (
-	<div className="d-flex gap-2 align-items-end">
-		<Image
-			src="/vault_icon.png"
-			width={24}
-			height={20}
-			alt="vault"
-			className="flex-shrink-0 mb-1"
-		/>
-		<div className="rounded-3 px-3 py-2 bg-light text-break">
-			<MessageRenderer
-				content={content}
-				animateChar={animateChar}
-				onAnimateStart={onAnimateStart}
-				onAnimateDone={onAnimateDone}
-			/>
-		</div>
-	</div>
-);
+const ChatLeft = memo(({ msg, onAnimateStart, onAnimateDone, onExecuteAction }: any) => {
+	const [isShowAction, setIsShowAction] = useState(msg.typingAnimation ? false : true);
+	const { content, typingAnimation, action } = msg as ChatMessage;
 
-const ChatRight = ({ content }) => (
+	const _onAnimateDone = () => {
+		setIsShowAction(true);
+		onAnimateDone();
+	};
+
+	return (
+		<div className="d-flex gap-2 align-items-end">
+			<Image
+				src="/vault_icon.png"
+				width={24}
+				height={20}
+				alt="vault"
+				className="flex-shrink-0 mb-1"
+			/>
+			<div className="rounded-3 px-3 py-2 bg-light text-break">
+				<MessageRenderer
+					content={content}
+					animateChar={typingAnimation}
+					onAnimateStart={onAnimateStart}
+					onAnimateDone={_onAnimateDone}
+				/>
+				{action && isShowAction ? (
+					<MessageAction onExecuteAction={onExecuteAction} />
+				) : null}
+			</div>
+		</div>
+	);
+});
+
+const ChatRight = memo(({ msg }: any) => (
 	<div className="d-flex gap-2 align-items-end">
 		<div className="rounded-3 px-3 py-2 bg-primary text-white ms-auto text-break">
-			<MessageRenderer content={content} />
+			<MessageRenderer content={msg.content} />
 		</div>
 	</div>
-);
+));
 
-const ChatThinking = () => (
+const ChatThinking = memo(() => (
 	<ChatLeft
-		content={<BeatLoader size={6} />}
-		animateChar={false}
-		onAnimateStart={() => {}}
-		onAnimateDone={() => {}}
+		msg={{ content: <BeatLoader size={6} />, typingAnimation: false }}
+		onAnimateStart={noop}
+		onAnimateDone={noop}
+		onExecuteAction={noop}
 	/>
-);
+));
 
 const ExpandButton = ({ onClick }) => (
 	<button type="button" className="btn text-secondary border-0" onClick={onClick}>
@@ -76,16 +92,23 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ vaultId }) => {
 	const router = useRouter();
 	const sessionRef = useRef(ChatSession.create());
 	const sessionId = sessionRef.current.getSessionId();
+	const account = useActiveAccount();
 
 	const [open, setOpen] = useState(false);
 	const [chatActivated, setChatActivated] = useState(false);
 	const [isAnimating, setIsAnimating] = useState(false);
 
-	const { messages, messageDraft, setMessageDraft, isThinking, commitMessageDraft } =
-		useChatSession(sessionId, {
-			persistEnabled: chatActivated,
-			vaultId,
-		});
+	const {
+		messages,
+		messageDraft,
+		setMessageDraft,
+		isThinking,
+		commitMessageDraft,
+		executeAction,
+	} = useChatSession(sessionId, {
+		persistEnabled: chatActivated,
+		vaultId,
+	});
 
 	const handleSend = async () => {
 		if (!messageDraft.trim() || isThinking || isAnimating) return;
@@ -97,12 +120,22 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ vaultId }) => {
 		router.push(`/ai-agent/chat/${sessionId}?vault_id=${vaultId}`);
 	};
 
-	const renderedMessages = [
-		...messages,
-		...(isThinking ? [THINKING_MESSAGE] : []),
-	].reverse();
+	const renderedMessages = useMemo(() => {
+		return [...messages, ...(isThinking ? [THINKING_MESSAGE] : [])].reverse();
+	}, [messages, isThinking]);
 
 	const isInputControlsDisabled = isThinking || isAnimating;
+
+	const handleAnimateStart = useCallback(() => setIsAnimating(true), []);
+	const handleAnimateDone = useCallback(() => setIsAnimating(false), []);
+	const handleExecuteAction = useCallback(
+		(msg: ChatMessage) => executeAction(msg),
+		[executeAction],
+	);
+
+	if (!account) {
+		return null;
+	}
 
 	return (
 		<div className="position-fixed bottom-0 end-0 m-4">
@@ -137,16 +170,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ vaultId }) => {
 									}
 
 									return msg.from === 'user' ? (
-										<ChatRight key={msg.id} content={msg.content} />
+										<ChatRight key={msg.id} msg={msg} />
 									) : (
 										<ChatLeft
 											key={msg.id}
-											content={msg.content}
-											animateChar={
-												'typingAnimation' in msg && msg.typingAnimation === true
-											}
-											onAnimateStart={() => setIsAnimating(true)}
-											onAnimateDone={() => setIsAnimating(false)}
+											msg={msg}
+											onAnimateStart={handleAnimateStart}
+											onAnimateDone={handleAnimateDone}
+											onExecuteAction={handleExecuteAction.bind(null, msg as ChatMessage)}
 										/>
 									);
 								})}

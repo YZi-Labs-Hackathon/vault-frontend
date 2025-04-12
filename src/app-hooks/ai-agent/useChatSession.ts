@@ -1,7 +1,12 @@
-import { useEffect, useState } from 'react';
+import { CHAIN, getSignerFromAccount } from '@/app-contexts/thirdweb';
 import { ChatSession } from '@/app-services/chat-session';
 import { ChatMessage } from '@/app-types/ai-agent';
+import { useCallback, useEffect, useState } from 'react';
+import { toast } from 'react-toastify';
+import { useActiveAccount } from 'thirdweb/react';
 import { useMutationSendChatMessage } from './useMutationSendChatMessage';
+import { get } from '@/app-helpers/misc';
+import { getErrorMessage } from '@/app-helpers/errors';
 
 interface UseChatSessionOptions {
 	persistEnabled?: boolean;
@@ -21,6 +26,7 @@ export const useChatSession = (
 	options: UseChatSessionOptions = {},
 ) => {
 	const { persistEnabled = true, useDefaultIfEmpty = true, vaultId } = options;
+	const account = useActiveAccount();
 
 	const { mutateAsync: sendChatMessage } = useMutationSendChatMessage();
 
@@ -63,7 +69,7 @@ export const useChatSession = (
 		try {
 			setIsThinking(true);
 
-			const response = await sendChatMessage({ message, vaultId });
+			const response = await sendChatMessage({ message, vaultId, llmModel: 'OPENAI' });
 
 			const botMsg: ChatMessage = {
 				id: Date.now() + 1,
@@ -71,6 +77,13 @@ export const useChatSession = (
 				content: response.content || ['Sorry, I didn’t get that.'],
 				typingAnimation: true,
 			};
+
+			if (response.requireSignature) {
+				botMsg.action = {
+					data: response.dataToSign,
+					target: response.contractAddress,
+				};
+			}
 
 			setMessages((prev) => [...prev, botMsg]);
 		} catch (error) {
@@ -103,11 +116,61 @@ export const useChatSession = (
 		await sendAndWaitForChatResponse(trimmed);
 	};
 
+	const deleteActionOfMessage = (message: ChatMessage) => {
+		if (!message.action) return;
+		const updatedMessages = messages.map((msg) => {
+			if (msg.id === message.id) {
+				return { ...msg, action: undefined, typingAnimation: false };
+			}
+			return { ...msg, typingAnimation: false };
+		});
+		setMessages(updatedMessages);
+	};
+
+	const executeAction = useCallback(
+		async (message: ChatMessage) => {
+			try {
+				console.debug('message', message);
+				if (!message.action || !account) return;
+
+				const { data, target } = message.action;
+				const signer = await getSignerFromAccount(account);
+				const tx = await signer.sendTransaction({
+					to: target,
+					data: data,
+				});
+				await tx.wait();
+
+				// Action should be no longer valid and exist in message
+				deleteActionOfMessage(message);
+
+				setTimeout(() => {
+					const explorerUrl = get(CHAIN, (d) => d.blockExplorers[0].url, '');
+					const successBotMsg: ChatMessage = {
+						id: Date.now() + 1,
+						from: 'bot',
+						content: [
+							`Transaction sent successfully! View it on explorer:`,
+							`[${tx.hash}](${explorerUrl}/tx/${tx.hash})`,
+						],
+						typingAnimation: false,
+					};
+					setMessages((prev) => [...prev, successBotMsg]);
+				}, 500);
+			} catch (e) {
+				console.error(e);
+				toast.error(`Failed to execute action: ${getErrorMessage(e)}`);
+			}
+		},
+		[account, setMessages],
+	);
+
 	return {
 		messages,
 		messageDraft,
 		isThinking,
 		setMessageDraft,
 		commitMessageDraft,
+		executeAction,
 	};
 };
