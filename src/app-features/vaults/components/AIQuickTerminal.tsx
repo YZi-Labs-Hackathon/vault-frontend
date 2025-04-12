@@ -18,9 +18,9 @@ const AIQuickTerminal = () => {
 	const { session } = useAuthContext();
 
 	const placeholders = [
-		"Help me find vaults that's fit to me",
+		"Help me find vaults that's suitable for me",
 		'Create a vault please',
-		'What is my TVL now?',
+		'List out my vaults',
 	];
 
 	// Use refs for mutable values that don't trigger re-renders
@@ -64,13 +64,12 @@ const AIQuickTerminal = () => {
 		const startChatFn = async () => {
 			setIsLoading(true);
 			await new Promise((resolve) => setTimeout(resolve, 0));
-			const session = ChatSession.create();
-			session.insertOne({
+			await ChatSession.insertOne({
 				id: Date.now(),
 				from: 'user',
 				content: [chatText],
 			});
-			router.push(`/ai-agent/chat/${session.getSessionId()}`);
+			router.push('/ai-agent/chat');
 		};
 
 		if (!account) {
@@ -117,7 +116,6 @@ const AIQuickTerminal = () => {
 					<Form.Control
 						placeholder={placeholder}
 						value={chatText}
-						maxLength={100}
 						onKeyDown={onInputEnter}
 						onChange={(e) => setChatText(e.target.value)}
 						disabled={isLoading}

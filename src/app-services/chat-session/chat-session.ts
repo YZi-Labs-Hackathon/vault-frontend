@@ -1,69 +1,43 @@
 import { ChatMessage, serializeChatMessage } from '@/app-types/ai-agent';
+import localforage from 'localforage';
 import { isArray } from 'lodash';
-import { v4 as uuid } from 'uuid';
 
-export class ChatSession {
-	private sessionId: string;
+class ChatSessionService {
+	private chatStore: LocalForage;
 
-	private constructor() {
-		this.sessionId = uuid();
-	}
-
-	public static create(): ChatSession {
-		return new ChatSession();
-	}
-
-	public static fromSessionId(sessionId: string): ChatSession {
-		const session = new ChatSession();
-		session.sessionId = sessionId;
-		return session;
+	constructor() {
+		this.chatStore = localforage.createInstance({
+			driver: localforage.INDEXEDDB,
+			name: 'partnt_vaults_chat',
+			storeName: 'chat_store',
+			version: 1,
+		});
 	}
 
 	public chatKey(): string {
-		return `chat:${this.sessionId}`;
+		return `chat_message_list`;
 	}
 
-	public getSessionId(): string {
-		return this.sessionId;
+	public async persist(messages: ChatMessage[]) {
+		await this.chatStore.setItem(this.chatKey(), messages.map(serializeChatMessage));
 	}
 
-	public persist(messages: ChatMessage[]) {
-		localStorage.setItem(
-			this.chatKey(),
-			JSON.stringify(messages.map(serializeChatMessage)),
-		);
-	}
-
-	public insertOne(message: ChatMessage) {
-		const messages = this.load();
+	public async insertOne(message: ChatMessage) {
+		const messages = await this.load();
 		messages.push(message);
-		this.persist(messages);
+		await this.persist(messages);
 	}
 
-	public useDefaultIfEmpty(): ChatMessage[] {
-		const messages = this.load();
-		if (messages.length === 0) {
-			const defaultMessages: ChatMessage[] = [
-				{
-					id: Date.now(),
-					from: 'bot',
-					content: ['Hello there, what can I help you?'],
-					typingAnimation: true,
-				},
-			];
-			this.persist(defaultMessages);
-			return defaultMessages;
-		}
-		return messages;
+	public async clear() {
+		await this.chatStore.setItem(this.chatKey(), []);
 	}
 
-	public load(): ChatMessage[] {
+	public async load(): Promise<ChatMessage[]> {
 		try {
-			const messages = localStorage.getItem(this.chatKey());
+			const messages = await this.chatStore.getItem(this.chatKey());
 			if (messages) {
-				const parsed = JSON.parse(messages);
-				if (isArray(parsed)) {
-					return parsed.map((msg: any) => ({
+				if (isArray(messages)) {
+					return messages.map((msg: any) => ({
 						id: msg.id,
 						from: msg.from,
 						content: msg.content,
@@ -72,7 +46,10 @@ export class ChatSession {
 					}));
 				}
 			}
-		} catch (e) {}
+		} catch (e) {
+			// Do nothing
+		}
 		return [];
 	}
 }
+export const ChatSession = new ChatSessionService();

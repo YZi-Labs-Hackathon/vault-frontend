@@ -68,13 +68,13 @@ export interface EVMVaultFactoryInterface extends utils.Interface {
     "collectFees(address,address)": FunctionFragment;
     "createNewVault((string,string,address,address,address,uint256,uint256,uint256,uint256),bytes)": FunctionFragment;
     "eip712Domain()": FunctionFragment;
+    "getVaultAddress((string,string,address,address,address,uint256,uint256,uint256,uint256),bytes)": FunctionFragment;
+    "initialize(address)": FunctionFragment;
     "owner()": FunctionFragment;
     "renounceOwnership()": FunctionFragment;
     "signer()": FunctionFragment;
     "transferOwnership(address)": FunctionFragment;
     "updateSigner(address)": FunctionFragment;
-    "updateWaitTime(uint256)": FunctionFragment;
-    "waitTime()": FunctionFragment;
   };
 
   getFunction(
@@ -83,13 +83,13 @@ export interface EVMVaultFactoryInterface extends utils.Interface {
       | "collectFees"
       | "createNewVault"
       | "eip712Domain"
+      | "getVaultAddress"
+      | "initialize"
       | "owner"
       | "renounceOwnership"
       | "signer"
       | "transferOwnership"
       | "updateSigner"
-      | "updateWaitTime"
-      | "waitTime"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -108,6 +108,11 @@ export interface EVMVaultFactoryInterface extends utils.Interface {
     functionFragment: "eip712Domain",
     values?: undefined
   ): string;
+  encodeFunctionData(
+    functionFragment: "getVaultAddress",
+    values: [IEVMVaultFactory.CreateNewVaultParamsStruct, BytesLike]
+  ): string;
+  encodeFunctionData(functionFragment: "initialize", values: [string]): string;
   encodeFunctionData(functionFragment: "owner", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "renounceOwnership",
@@ -122,11 +127,6 @@ export interface EVMVaultFactoryInterface extends utils.Interface {
     functionFragment: "updateSigner",
     values: [string]
   ): string;
-  encodeFunctionData(
-    functionFragment: "updateWaitTime",
-    values: [BigNumberish]
-  ): string;
-  encodeFunctionData(functionFragment: "waitTime", values?: undefined): string;
 
   decodeFunctionResult(
     functionFragment: "CREATE_VAULT_TYPEHASH",
@@ -144,6 +144,11 @@ export interface EVMVaultFactoryInterface extends utils.Interface {
     functionFragment: "eip712Domain",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(
+    functionFragment: "getVaultAddress",
+    data: BytesLike
+  ): Result;
+  decodeFunctionResult(functionFragment: "initialize", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "owner", data: BytesLike): Result;
   decodeFunctionResult(
     functionFragment: "renounceOwnership",
@@ -158,19 +163,16 @@ export interface EVMVaultFactoryInterface extends utils.Interface {
     functionFragment: "updateSigner",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "updateWaitTime",
-    data: BytesLike
-  ): Result;
-  decodeFunctionResult(functionFragment: "waitTime", data: BytesLike): Result;
 
   events: {
     "EIP712DomainChanged()": EventFragment;
+    "Initialized(uint64)": EventFragment;
     "OwnershipTransferred(address,address)": EventFragment;
     "VaultCreated(address,address,uint256)": EventFragment;
   };
 
   getEvent(nameOrSignatureOrTopic: "EIP712DomainChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Initialized"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "OwnershipTransferred"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "VaultCreated"): EventFragment;
 }
@@ -183,6 +185,13 @@ export type EIP712DomainChangedEvent = TypedEvent<
 
 export type EIP712DomainChangedEventFilter =
   TypedEventFilter<EIP712DomainChangedEvent>;
+
+export interface InitializedEventObject {
+  version: BigNumber;
+}
+export type InitializedEvent = TypedEvent<[BigNumber], InitializedEventObject>;
+
+export type InitializedEventFilter = TypedEventFilter<InitializedEvent>;
 
 export interface OwnershipTransferredEventObject {
   previousOwner: string;
@@ -263,6 +272,17 @@ export interface EVMVaultFactory extends BaseContract {
       }
     >;
 
+    getVaultAddress(
+      params: IEVMVaultFactory.CreateNewVaultParamsStruct,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<[string]>;
+
+    initialize(
+      _signer: string,
+      overrides?: Overrides & { from?: string }
+    ): Promise<ContractTransaction>;
+
     owner(overrides?: CallOverrides): Promise<[string]>;
 
     renounceOwnership(
@@ -280,13 +300,6 @@ export interface EVMVaultFactory extends BaseContract {
       _signer: string,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
-
-    updateWaitTime(
-      _waitTime: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<ContractTransaction>;
-
-    waitTime(overrides?: CallOverrides): Promise<[BigNumber]>;
   };
 
   CREATE_VAULT_TYPEHASH(overrides?: CallOverrides): Promise<string>;
@@ -317,6 +330,17 @@ export interface EVMVaultFactory extends BaseContract {
     }
   >;
 
+  getVaultAddress(
+    params: IEVMVaultFactory.CreateNewVaultParamsStruct,
+    signature: BytesLike,
+    overrides?: CallOverrides
+  ): Promise<string>;
+
+  initialize(
+    _signer: string,
+    overrides?: Overrides & { from?: string }
+  ): Promise<ContractTransaction>;
+
   owner(overrides?: CallOverrides): Promise<string>;
 
   renounceOwnership(
@@ -332,13 +356,6 @@ export interface EVMVaultFactory extends BaseContract {
     _signer: string,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
-
-  updateWaitTime(
-    _waitTime: BigNumberish,
-    overrides?: Overrides & { from?: string }
-  ): Promise<ContractTransaction>;
-
-  waitTime(overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
     CREATE_VAULT_TYPEHASH(overrides?: CallOverrides): Promise<string>;
@@ -369,6 +386,14 @@ export interface EVMVaultFactory extends BaseContract {
       }
     >;
 
+    getVaultAddress(
+      params: IEVMVaultFactory.CreateNewVaultParamsStruct,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<string>;
+
+    initialize(_signer: string, overrides?: CallOverrides): Promise<void>;
+
     owner(overrides?: CallOverrides): Promise<string>;
 
     renounceOwnership(overrides?: CallOverrides): Promise<void>;
@@ -381,18 +406,14 @@ export interface EVMVaultFactory extends BaseContract {
     ): Promise<void>;
 
     updateSigner(_signer: string, overrides?: CallOverrides): Promise<void>;
-
-    updateWaitTime(
-      _waitTime: BigNumberish,
-      overrides?: CallOverrides
-    ): Promise<void>;
-
-    waitTime(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {
     "EIP712DomainChanged()"(): EIP712DomainChangedEventFilter;
     EIP712DomainChanged(): EIP712DomainChangedEventFilter;
+
+    "Initialized(uint64)"(version?: null): InitializedEventFilter;
+    Initialized(version?: null): InitializedEventFilter;
 
     "OwnershipTransferred(address,address)"(
       previousOwner?: string | null,
@@ -432,6 +453,17 @@ export interface EVMVaultFactory extends BaseContract {
 
     eip712Domain(overrides?: CallOverrides): Promise<BigNumber>;
 
+    getVaultAddress(
+      params: IEVMVaultFactory.CreateNewVaultParamsStruct,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<BigNumber>;
+
+    initialize(
+      _signer: string,
+      overrides?: Overrides & { from?: string }
+    ): Promise<BigNumber>;
+
     owner(overrides?: CallOverrides): Promise<BigNumber>;
 
     renounceOwnership(
@@ -449,13 +481,6 @@ export interface EVMVaultFactory extends BaseContract {
       _signer: string,
       overrides?: Overrides & { from?: string }
     ): Promise<BigNumber>;
-
-    updateWaitTime(
-      _waitTime: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<BigNumber>;
-
-    waitTime(overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -477,6 +502,17 @@ export interface EVMVaultFactory extends BaseContract {
 
     eip712Domain(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    getVaultAddress(
+      params: IEVMVaultFactory.CreateNewVaultParamsStruct,
+      signature: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
+    initialize(
+      _signer: string,
+      overrides?: Overrides & { from?: string }
+    ): Promise<PopulatedTransaction>;
+
     owner(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     renounceOwnership(
@@ -494,12 +530,5 @@ export interface EVMVaultFactory extends BaseContract {
       _signer: string,
       overrides?: Overrides & { from?: string }
     ): Promise<PopulatedTransaction>;
-
-    updateWaitTime(
-      _waitTime: BigNumberish,
-      overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    waitTime(overrides?: CallOverrides): Promise<PopulatedTransaction>;
   };
 }

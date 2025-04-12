@@ -3,12 +3,16 @@ import { useQueryVaultList } from '@/app-hooks/vaults';
 import { VaultProtocolService, VaultStatus } from '@/app-types/vault';
 import { useMemo } from 'react';
 import { getVaultTableColumns, IVaultTableItem } from './vault-table-helpers';
+import { get } from '@/app-helpers/misc';
 
 const VaultTable = () => {
-	const { data: vaults, isLoading } = useQueryVaultList({
+	const { data: vaultPaginate, isLoading } = useQueryVaultList({
+		page: 1,
+		limit: 20,
 		filterStatus: [VaultStatus.ACTIVE, VaultStatus.PAUSE, VaultStatus.CLOSE].join(','),
 		services: [VaultProtocolService.venus, VaultProtocolService.pancake].join(','),
 	});
+	const vaults = get(vaultPaginate, (d) => d.items, []);
 
 	const vaultTableData = useMemo(() => {
 		if (!vaults || !vaults.length) return [];

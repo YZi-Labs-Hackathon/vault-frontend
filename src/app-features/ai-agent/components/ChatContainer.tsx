@@ -1,7 +1,14 @@
 import { THINKING_MESSAGE, useChatSession } from '@/app-hooks/ai-agent';
 import { ChatMessage } from '@/app-types/ai-agent';
 import { noop } from 'lodash';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import {
+	memo,
+	useCallback,
+	useMemo,
+	useState,
+	useImperativeHandle,
+	forwardRef,
+} from 'react';
 import { Button, Card, Image, InputGroup } from 'react-bootstrap';
 import BeatLoader from 'react-spinners/BeatLoader';
 import { useActiveAccount } from 'thirdweb/react';
@@ -9,7 +16,6 @@ import ChatInput from './ChatInput';
 import MessageAction from './MessageAction';
 import MessageRenderer from './MessageRenderer';
 
-// Bot message
 const ChatLeft = memo(({ msg, onAnimateStart, onAnimateDone, onExecuteAction }: any) => {
 	const [isShowAction, setIsShowAction] = useState(msg.typingAnimation ? false : true);
 	const { content, typingAnimation, action } = msg as ChatMessage;
@@ -43,7 +49,6 @@ const ChatLeft = memo(({ msg, onAnimateStart, onAnimateDone, onExecuteAction }: 
 	);
 });
 
-// User message
 const ChatRight = memo(({ msg }: any) => (
 	<div className="d-flex gap-2 align-items-end">
 		<div className="rounded-3 px-3 py-2 bg-primary text-white ms-auto text-break">
@@ -52,7 +57,7 @@ const ChatRight = memo(({ msg }: any) => (
 	</div>
 ));
 
-const ChatThinking = memo<any>(() => (
+const ChatThinking = memo(() => (
 	<ChatLeft
 		msg={{ content: <BeatLoader size={6} />, typingAnimation: false }}
 		onAnimateStart={noop}
@@ -61,88 +66,102 @@ const ChatThinking = memo<any>(() => (
 	/>
 ));
 
+export interface ChatContainerHandle {
+	clearMessages: () => void;
+}
+
 interface ChatContainerProps {
-	sessionId: string;
 	vaultId?: string;
 }
 
-// Main chat component
-const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, vaultId }) => {
-	const account = useActiveAccount();
-	const [isAnimating, setIsAnimating] = useState(false);
+// ForwardRef version of ChatContainer
+const ChatContainer = forwardRef<ChatContainerHandle, ChatContainerProps>(
+	({ vaultId }, ref) => {
+		const account = useActiveAccount();
+		const [isAnimating, setIsAnimating] = useState(false);
 
-	const {
-		messages,
-		messageDraft,
-		setMessageDraft,
-		isThinking,
-		commitMessageDraft,
-		executeAction,
-	} = useChatSession(sessionId, {
-		vaultId,
-	});
-	const renderedMessages = useMemo(() => {
-		return [...messages, ...(isThinking ? [THINKING_MESSAGE] : [])].reverse();
-	}, [messages, isThinking]);
-	const isInputControlsDisabled = isThinking || isAnimating;
+		const {
+			messages,
+			messageDraft,
+			isThinking,
+			setMessageDraft,
+			commitMessageDraft,
+			executeAction,
+			clearAllMessages,
+		} = useChatSession({
+			vaultId,
+		});
 
-	const handleAnimateStart = useCallback(() => setIsAnimating(true), []);
-	const handleAnimateDone = useCallback(() => setIsAnimating(false), []);
-	const handleExecuteAction = useCallback(
-		(msg: ChatMessage) => executeAction(msg),
-		[executeAction],
-	);
+		useImperativeHandle(ref, () => ({
+			clearMessages: clearAllMessages,
+		}));
 
-	if (!account) {
-		return null;
-	}
+		const renderedMessages = useMemo(() => {
+			return [...messages, ...(isThinking ? [THINKING_MESSAGE] : [])].reverse();
+		}, [messages, isThinking]);
 
-	return (
-		<Card
-			className="chatBox overflow-hidden shadow-sm rounded-4"
-			style={{ height: 'calc(100dvh - 240px)' }}
-		>
-			<Card.Body className="overflow-x-hidden overflow-y-auto h-100">
-				<div className="chatContent d-flex flex-column-reverse gap-2 h-100 overflow-y-auto px-4">
-					{renderedMessages.map((msg) => {
-						if ('thinking' in msg && msg.thinking) {
-							return <ChatThinking key="thinking" />;
-						}
+		const isInputControlsDisabled = isThinking || isAnimating;
 
-						return msg.from === 'user' ? (
-							<ChatRight key={msg.id} msg={msg} />
-						) : (
-							<ChatLeft
-								key={msg.id}
-								msg={msg}
-								onAnimateStart={handleAnimateStart}
-								onAnimateDone={handleAnimateDone}
-								onExecuteAction={handleExecuteAction.bind(null, msg as ChatMessage)}
-							/>
-						);
-					})}
-				</div>
-			</Card.Body>
+		const handleAnimateStart = useCallback(() => setIsAnimating(true), []);
+		const handleAnimateDone = useCallback(() => setIsAnimating(false), []);
+		const handleExecuteAction = useCallback(
+			(msg: ChatMessage) => executeAction(msg),
+			[executeAction],
+		);
 
-			<Card.Footer className="py-3">
-				<InputGroup>
-					<ChatInput
-						value={messageDraft}
-						onChange={(e) => setMessageDraft(e.target.value)}
-						onSubmit={commitMessageDraft}
-					/>
+		if (!account) {
+			return null;
+		}
 
-					<Button
-						variant="primary"
-						onClick={commitMessageDraft}
-						disabled={isInputControlsDisabled}
-					>
-						Send
-					</Button>
-				</InputGroup>
-			</Card.Footer>
-		</Card>
-	);
-};
+		return (
+			<Card
+				className="chatBox overflow-hidden shadow-sm rounded-4"
+				style={{ height: 'calc(100dvh - 240px)' }}
+			>
+				<Card.Body className="overflow-x-hidden overflow-y-auto h-100">
+					<div className="chatContent d-flex flex-column-reverse gap-2 h-100 overflow-y-auto px-4">
+						{renderedMessages.map((msg) => {
+							if ('thinking' in msg && msg.thinking) {
+								return <ChatThinking key="thinking" />;
+							}
+
+							return msg.from === 'user' ? (
+								<ChatRight key={msg.id} msg={msg} />
+							) : (
+								<ChatLeft
+									key={msg.id}
+									msg={msg}
+									onAnimateStart={handleAnimateStart}
+									onAnimateDone={handleAnimateDone}
+									onExecuteAction={handleExecuteAction.bind(null, msg as ChatMessage)}
+								/>
+							);
+						})}
+					</div>
+				</Card.Body>
+
+				<Card.Footer className="py-3">
+					<InputGroup>
+						<ChatInput
+							value={messageDraft}
+							onChange={(e) => setMessageDraft(e.target.value)}
+							onSubmit={commitMessageDraft}
+						/>
+
+						<Button
+							variant="primary"
+							onClick={commitMessageDraft}
+							disabled={isInputControlsDisabled}
+						>
+							Send
+						</Button>
+					</InputGroup>
+				</Card.Footer>
+			</Card>
+		);
+	},
+);
+
+ChatContainer.displayName = 'ChatContainer';
 
 export default ChatContainer;

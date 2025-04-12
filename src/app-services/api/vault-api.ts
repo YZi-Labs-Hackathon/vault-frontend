@@ -1,5 +1,5 @@
 import { get } from '@/app-helpers/misc';
-import { ApiResponse } from '@/app-types/common';
+import { ApiResponse, Paginate } from '@/app-types/common';
 import { Vault, VaultListItem, VaultProtocol } from '@/app-types/vault';
 import { isNil, omitBy } from 'lodash';
 import { axiosAPI } from './transport';
@@ -15,21 +15,32 @@ import {
 
 class VaultApiService {
 	async getVaultsPublic(filter?: GetVaultsFilterParams) {
-		const response = await axiosAPI.get<ApiResponse<VaultListItem[]>>(
+		const response = await axiosAPI.get<ApiResponse<Paginate<VaultListItem>>>(
 			'/api/vault/public',
 			{
 				params: omitBy(filter || {}, isNil),
 				skip_auth: true,
 			},
 		);
-		return get(response, (d) => d.data.data, []) as VaultListItem[];
+		return get(
+			response,
+			(d) => d.data.data,
+			{} as Paginate<VaultListItem>,
+		) as Paginate<VaultListItem>;
 	}
 
 	async getVaultsWithAuth(filter?: GetVaultsFilterParams) {
-		const response = await axiosAPI.get<ApiResponse<VaultListItem[]>>('/api/vault/list', {
-			params: omitBy(filter || {}, isNil),
-		});
-		return get(response, (d) => d.data.data, []) as VaultListItem[];
+		const response = await axiosAPI.get<ApiResponse<Paginate<VaultListItem>>>(
+			'/api/vault/list',
+			{
+				params: omitBy(filter || {}, isNil),
+			},
+		);
+		return get(
+			response,
+			(d) => d.data.data,
+			{} as Paginate<VaultListItem>,
+		) as Paginate<VaultListItem>;
 	}
 
 	async getVaultDetailsPublic(filter?: GetVaultDetailsParams) {

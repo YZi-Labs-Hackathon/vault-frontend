@@ -1,5 +1,6 @@
+import { useOnEventCallback } from '@/app-hooks/common';
 import classNames from 'classnames';
-import React, { useEffect, useRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Form } from 'react-bootstrap';
 
 interface ChatInputProps {
@@ -13,37 +14,62 @@ interface ChatInputProps {
 }
 
 const MAX_ROWS = 4;
-const LINE_HEIGHT = 16; // adjust if needed based on styling
+const LINE_HEIGHT = 16;
 
-const ChatInput = React.forwardRef<HTMLTextAreaElement, ChatInputProps>(
+const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
 	(
 		{
 			value,
 			onChange,
 			onSubmit,
-			placeholder = 'Type to chat (Ctrl or Cmd + Enter to send)',
+			placeholder = 'Ask anything about Partnr Vaults',
 			disabled = false,
-			className = '',
-			style = {},
+			className,
+			style,
 		},
 		ref,
 	) => {
 		const internalRef = useRef<HTMLTextAreaElement>(null);
 
-		// Expose internalRef to parent
 		useImperativeHandle(ref, () => internalRef.current!);
 
-		// Auto-resize effect
 		useEffect(() => {
 			const el = internalRef.current;
 			if (!el) return;
 
-			el.style.height = 'auto'; // Reset height to get scrollHeight correctly
+			el.style.height = 'auto';
 			const scrollHeight = el.scrollHeight;
 			const maxHeight = LINE_HEIGHT * MAX_ROWS;
-
 			el.style.height = `${Math.min(scrollHeight, maxHeight)}px`;
 		}, [value]);
+
+		const handleKeyDown = useOnEventCallback(
+			(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+				if (e.key === 'Enter') {
+					if (e.ctrlKey || e.metaKey) {
+						e.preventDefault();
+						const target = e.currentTarget;
+						const { selectionStart, selectionEnd } = target;
+						const newValue =
+							value.slice(0, selectionStart) + '\n' + value.slice(selectionEnd);
+						const event = {
+							...e,
+							target: {
+								...target,
+								value: newValue,
+							},
+						} as unknown as React.ChangeEvent<HTMLTextAreaElement>;
+						onChange(event);
+						setTimeout(() => {
+							target.selectionStart = target.selectionEnd = selectionStart + 1;
+						}, 0);
+					} else {
+						e.preventDefault();
+						onSubmit();
+					}
+				}
+			},
+		);
 
 		return (
 			<Form.Control
@@ -52,14 +78,9 @@ const ChatInput = React.forwardRef<HTMLTextAreaElement, ChatInputProps>(
 				value={value}
 				placeholder={placeholder}
 				onChange={onChange}
-				onKeyDown={(e) => {
-					if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
-						e.preventDefault();
-						onSubmit();
-					}
-				}}
+				onKeyDown={handleKeyDown}
 				disabled={disabled}
-				className={className}
+				className={classNames('chat-input', className)}
 				style={{
 					resize: 'none',
 					overflowY: 'auto',

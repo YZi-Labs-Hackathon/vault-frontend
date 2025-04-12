@@ -32,6 +32,7 @@ export interface VaultDepositSignatureParams {
 	amount: string;
 	userAddress: string;
 	vaultTvl: string;
+	depositId: string;
 }
 
 export interface VaultDepositSignatureSignature {
@@ -51,6 +52,7 @@ export interface CreateVaultActionParams {
 }
 
 export interface CreateVaultActionData {
+	executeId: string;
 	targets: string[];
 	data: string[];
 	deadline: string;

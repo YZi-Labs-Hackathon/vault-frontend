@@ -1,6 +1,7 @@
 import { CHAIN, getSignerFromAccount } from '@/app-contexts/thirdweb';
 import { getErrorMessage } from '@/app-helpers/errors';
 import { delay, get } from '@/app-helpers/misc';
+import { AIChatParams } from '@/app-services/api';
 import { ChatSession } from '@/app-services/chat-session';
 import { ChatAction, ChatMessage, NEED_RETRY_ACTIONS } from '@/app-types/ai-agent';
 import { useEffect, useState } from 'react';
@@ -15,8 +16,6 @@ import {
 import { useMutationSendChatMessage } from './useMutationSendChatMessage';
 
 interface UseChatSessionOptions {
-	persistEnabled?: boolean;
-	useDefaultIfEmpty?: boolean;
 	vaultId?: string;
 }
 
@@ -27,11 +26,8 @@ export const THINKING_MESSAGE = {
 	content: [],
 };
 
-export const useChatSession = (
-	sessionId: string,
-	options: UseChatSessionOptions = {},
-) => {
-	const { persistEnabled = true, useDefaultIfEmpty = true, vaultId } = options;
+export const useChatSession = (options: UseChatSessionOptions = {}) => {
+	const { vaultId } = options;
 	const account = useActiveAccount();
 
 	const { mutateAsync: sendChatMessage } = useMutationSendChatMessage();
@@ -41,7 +37,6 @@ export const useChatSession = (
 	const { mutateAsync: syncCreateVaultTransaction } =
 		useMutationSyncCreateVaultTransaction();
 
-	const [chatSession, setChatSession] = useState<ChatSession | null>(null);
 	const [messages, setMessages] = useState<ChatMessage[]>([]);
 	const [messageDraft, setMessageDraft] = useState('');
 	const [isThinking, setIsThinking] = useState(false);
@@ -49,70 +44,88 @@ export const useChatSession = (
 	// Delay session setup until we're on the client
 	useEffect(() => {
 		if (typeof window !== 'undefined') {
-			const session = ChatSession.fromSessionId(sessionId);
-			setChatSession(session);
+			(async () => {
+				const initialMessages = await ChatSession.load();
 
-			const initialMessages = useDefaultIfEmpty
-				? session.useDefaultIfEmpty()
-				: session.load();
+				if (initialMessages.length === 0) {
+					sendAndWaitForChatResponse('Hi');
+					return;
+				}
 
-			setMessages(initialMessages);
+				setMessages(initialMessages);
 
-			// Auto trigger bot response if only 1 user message
-			if (
-				initialMessages.length === 1 &&
-				initialMessages[0].from === 'user' &&
-				typeof initialMessages[0].content?.[0] === 'string'
-			) {
-				sendAndWaitForChatResponse(initialMessages[0].content[0]);
-			}
+				const lastMsgIndex = initialMessages.length - 1;
+				if (
+					initialMessages[lastMsgIndex].from === 'user' &&
+					typeof initialMessages[lastMsgIndex].content?.[0] === 'string'
+				) {
+					sendAndWaitForChatResponse(initialMessages[lastMsgIndex].content[0]);
+				}
+			})();
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [sessionId]);
+	}, []);
 
 	useEffect(() => {
-		if (chatSession && persistEnabled) {
-			chatSession.persist(messages);
-		}
-	}, [chatSession, messages, persistEnabled]);
+		ChatSession.persist(messages);
+	}, [messages]);
 
-	const sendAndWaitForChatResponse = useOnEventCallback(async (message: string) => {
-		try {
-			setIsThinking(true);
+	const clearAllMessages = useOnEventCallback(async () => {
+		setMessages([]);
+		await delay(500);
+		sendAndWaitForChatResponse('clear conservation', 'CLAUDE');
+	});
 
-			const response = await sendChatMessage({ message, vaultId, llmModel: 'OPENAI' });
+	const sendAndWaitForChatResponse = useOnEventCallback(
+		async (message: string, llmModel?: AIChatParams['llmModel']) => {
+			try {
+				setIsThinking(true);
 
-			const botMsg: ChatMessage = {
-				id: Date.now() + 1,
-				from: 'bot',
-				content: response.content || ['Sorry, I didn’t get that.'],
-				typingAnimation: true,
-			};
+				const response = await sendChatMessage({
+					message,
+					vaultId,
+					llmModel: llmModel ?? 'OPENAI',
+				});
 
-			if (response.requireSignature) {
-				botMsg.action = {
-					data: response.dataToSign,
-					target: response.contractAddress,
-					actionName: response.action ?? '',
-					customParams: response.customParams ?? {},
-				};
-			}
-
-			setMessages((prev) => [...prev, botMsg]);
-		} catch (error) {
-			setMessages((prev) => [
-				...prev,
-				{
+				const botMsg: ChatMessage = {
 					id: Date.now() + 1,
 					from: 'bot',
-					content: ['Something went wrong. Please try again later.'],
+					content: response.content || ['Sorry, I didn’t get that.'],
 					typingAnimation: true,
-				},
-			]);
-		} finally {
-			setIsThinking(false);
-		}
-	});
+				};
+
+				if (response.requireSignature) {
+					botMsg.action = {
+						data: response.dataToSign,
+						target: response.contractAddress,
+						actionName: response.action ?? '',
+						customParams: response.customParams ?? {},
+					};
+				}
+
+				setMessages((prev) => [...prev, botMsg]);
+			} catch (error) {
+				// Retry with CLAUDE model if currently using OpenAI
+				const isUsingOpenAI = !llmModel || llmModel === 'OPENAI';
+				if (isUsingOpenAI) {
+					await sendAndWaitForChatResponse(message, 'CLAUDE');
+					return;
+				}
+
+				setMessages((prev) => [
+					...prev,
+					{
+						id: Date.now() + 1,
+						from: 'bot',
+						content: ['Something went wrong. Please try again later.'],
+						typingAnimation: true,
+					},
+				]);
+			} finally {
+				setIsThinking(false);
+			}
+		},
+	);
 
 	const commitMessageDraft = async () => {
 		const trimmed = messageDraft.trim();
@@ -246,5 +259,6 @@ export const useChatSession = (
 		setMessageDraft,
 		commitMessageDraft,
 		executeAction,
+		clearAllMessages,
 	};
 };

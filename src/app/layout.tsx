@@ -1,9 +1,5 @@
 import '@/assets/styles/main.scss';
 
-import { FeatureFlagProvider } from '@/app-contexts/feature-flag';
-import NProgressProvider from '@/app-contexts/nprogress/nprogress-provider';
-import { ReactQueryProvider } from '@/app-contexts/react-query';
-import { TWProvider } from '@/app-contexts/thirdweb';
 import { ServerPropsWithLocale } from '@/app-types/common';
 import { Metadata, Viewport } from 'next';
 import { ToastContainer } from 'react-toastify';

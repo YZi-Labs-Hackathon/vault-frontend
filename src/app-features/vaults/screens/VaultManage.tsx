@@ -22,16 +22,6 @@ interface VaultManageProps {
 	address: string;
 }
 
-const SAMPLE_VAULT_ACTION = {
-	targets: ['0xfD36E2c2a6789Db23113685031d7F16329158384'],
-	data: [
-		'0xc299823800000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000fd5840cd36d94d7229439859c0112a4185bc0255',
-	],
-	deadline: 1744341802,
-	signature:
-		'0x2af09f53f883fa492833569c0e7a3c5e8fafaf523d6a0fc4f447fa426a1bbb0f7587c9955e048e25dc0ab8cbbb70b600791918c51efd5339bd4f920cf2c827ea1c',
-};
-
 const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
 	const account = useActiveAccount();
@@ -81,6 +71,7 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 		}
 
 		const {
+			executeId,
 			targets,
 			data: targetData,
 			deadline,
@@ -92,11 +83,15 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 			service: vaultProtocol?.service ?? VaultProtocolService.venus,
 		});
 
-		// const { targets, data: targetData, deadline, signature } = SAMPLE_VAULT_ACTION;
-
 		const signer = await getSignerFromAccount(account);
 		const vaultContract = EVMVault__factory.connect(vault.contractAddress, signer);
-		const tx = await vaultContract.execute(targets, targetData, deadline, signature);
+		const tx = await vaultContract.execute(
+			executeId,
+			targets,
+			targetData,
+			deadline,
+			signature,
+		);
 		await tx.wait();
 
 		return tx.hash;
@@ -242,7 +237,7 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 					</Col>
 				</Row>
 			</Container>
-			<Container fluid className="pb-5">
+			<Container className="pb-5">
 				<Card className="border-0 bg-light">
 					<Card.Body className="">
 						<Row className="g-3">

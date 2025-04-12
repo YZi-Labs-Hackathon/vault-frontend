@@ -29,11 +29,7 @@ export const TWContext = React.createContext<TWContextValue>({
 	isConnecting: false,
 });
 
-export const WALLETS = [
-	createWallet('io.miraiapp'),
-	createWallet('walletConnect'),
-	createWallet('io.metamask'),
-];
+export const WALLETS = [createWallet('io.metamask'), createWallet('walletConnect')];
 
 export const APP_CHAINS = [bnbChain];
 export const CHAIN = bnbChain;

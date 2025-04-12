@@ -244,6 +244,12 @@ const _abi = [
     inputs: [
       {
         indexed: true,
+        internalType: "bytes16",
+        name: "depositId",
+        type: "bytes16",
+      },
+      {
+        indexed: true,
         internalType: "address",
         name: "user",
         type: "address",
@@ -262,6 +268,19 @@ const _abi = [
     anonymous: false,
     inputs: [],
     name: "EIP712DomainChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: true,
+        internalType: "bytes16",
+        name: "excuteId",
+        type: "bytes16",
+      },
+    ],
+    name: "Executed",
     type: "event",
   },
   {
@@ -313,6 +332,10 @@ const _abi = [
     ],
     name: "Withdrawn",
     type: "event",
+  },
+  {
+    stateMutability: "payable",
+    type: "fallback",
   },
   {
     inputs: [],
@@ -488,6 +511,11 @@ const _abi = [
   {
     inputs: [
       {
+        internalType: "bytes16",
+        name: "depositId",
+        type: "bytes16",
+      },
+      {
         internalType: "uint256",
         name: "amount",
         type: "uint256",
@@ -569,6 +597,30 @@ const _abi = [
   },
   {
     inputs: [
+      {
+        internalType: "bytes16",
+        name: "",
+        type: "bytes16",
+      },
+    ],
+    name: "excuteIds",
+    outputs: [
+      {
+        internalType: "bool",
+        name: "",
+        type: "bool",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "bytes16",
+        name: "excuteId",
+        type: "bytes16",
+      },
       {
         internalType: "address[]",
         name: "targets",
@@ -824,25 +876,6 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "userLastActions",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
     inputs: [],
     name: "vaultFees",
     outputs: [
@@ -904,23 +937,8 @@ const _abi = [
     type: "function",
   },
   {
-    inputs: [
-      {
-        internalType: "bytes16",
-        name: "",
-        type: "bytes16",
-      },
-    ],
-    name: "withdrawIds",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
+    stateMutability: "payable",
+    type: "receive",
   },
 ] as const;
 

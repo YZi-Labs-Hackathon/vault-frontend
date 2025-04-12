@@ -1,5 +1,4 @@
 import { AuthProvider, WrappedSessionProvider } from '@/app-contexts/auth';
-import { FeatureFlagProvider } from '@/app-contexts/feature-flag';
 import NProgressProvider from '@/app-contexts/nprogress/nprogress-provider';
 import { ReactQueryProvider } from '@/app-contexts/react-query';
 import { TWProvider } from '@/app-contexts/thirdweb';
@@ -14,13 +13,11 @@ export default async function LocaleLayout({
 	return (
 		<NProgressProvider>
 			<ReactQueryProvider>
-				<FeatureFlagProvider>
-					<TWProvider>
-						<WrappedSessionProvider session={session}>
-							<AuthProvider>{children}</AuthProvider>
-						</WrappedSessionProvider>
-					</TWProvider>
-				</FeatureFlagProvider>
+				<TWProvider>
+					<WrappedSessionProvider session={session}>
+						<AuthProvider>{children}</AuthProvider>
+					</WrappedSessionProvider>
+				</TWProvider>
 			</ReactQueryProvider>
 		</NProgressProvider>
 	);

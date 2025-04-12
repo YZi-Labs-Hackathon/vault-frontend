@@ -75,9 +75,10 @@ export interface EVMVaultInterface extends utils.Interface {
     "collectFees(address)": FunctionFragment;
     "creatorFees()": FunctionFragment;
     "decimals()": FunctionFragment;
-    "deposit(uint256,address,uint256,uint256,bytes)": FunctionFragment;
+    "deposit(bytes16,uint256,address,uint256,uint256,bytes)": FunctionFragment;
     "eip712Domain()": FunctionFragment;
-    "execute(address[],bytes[],uint256,bytes)": FunctionFragment;
+    "excuteIds(bytes16)": FunctionFragment;
+    "execute(bytes16,address[],bytes[],uint256,bytes)": FunctionFragment;
     "factory()": FunctionFragment;
     "getVaultValue()": FunctionFragment;
     "maxDepositAmount()": FunctionFragment;
@@ -93,10 +94,8 @@ export interface EVMVaultInterface extends utils.Interface {
     "updateMaxDepositAmount(uint256)": FunctionFragment;
     "updateMinDepositAmount(uint256)": FunctionFragment;
     "userDeposited(address)": FunctionFragment;
-    "userLastActions(address)": FunctionFragment;
     "vaultFees()": FunctionFragment;
     "withdraw(bytes16,address,uint256,uint256,uint256,uint256,uint256,bytes)": FunctionFragment;
-    "withdrawIds(bytes16)": FunctionFragment;
   };
 
   getFunction(
@@ -114,6 +113,7 @@ export interface EVMVaultInterface extends utils.Interface {
       | "decimals"
       | "deposit"
       | "eip712Domain"
+      | "excuteIds"
       | "execute"
       | "factory"
       | "getVaultValue"
@@ -130,10 +130,8 @@ export interface EVMVaultInterface extends utils.Interface {
       | "updateMaxDepositAmount"
       | "updateMinDepositAmount"
       | "userDeposited"
-      | "userLastActions"
       | "vaultFees"
       | "withdraw"
-      | "withdrawIds"
   ): FunctionFragment;
 
   encodeFunctionData(
@@ -170,15 +168,26 @@ export interface EVMVaultInterface extends utils.Interface {
   encodeFunctionData(functionFragment: "decimals", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "deposit",
-    values: [BigNumberish, string, BigNumberish, BigNumberish, BytesLike]
+    values: [
+      BytesLike,
+      BigNumberish,
+      string,
+      BigNumberish,
+      BigNumberish,
+      BytesLike
+    ]
   ): string;
   encodeFunctionData(
     functionFragment: "eip712Domain",
     values?: undefined
   ): string;
   encodeFunctionData(
+    functionFragment: "excuteIds",
+    values: [BytesLike]
+  ): string;
+  encodeFunctionData(
     functionFragment: "execute",
-    values: [string[], BytesLike[], BigNumberish, BytesLike]
+    values: [BytesLike, string[], BytesLike[], BigNumberish, BytesLike]
   ): string;
   encodeFunctionData(functionFragment: "factory", values?: undefined): string;
   encodeFunctionData(
@@ -228,10 +237,6 @@ export interface EVMVaultInterface extends utils.Interface {
     functionFragment: "userDeposited",
     values: [string]
   ): string;
-  encodeFunctionData(
-    functionFragment: "userLastActions",
-    values: [string]
-  ): string;
   encodeFunctionData(functionFragment: "vaultFees", values?: undefined): string;
   encodeFunctionData(
     functionFragment: "withdraw",
@@ -245,10 +250,6 @@ export interface EVMVaultInterface extends utils.Interface {
       BigNumberish,
       BytesLike
     ]
-  ): string;
-  encodeFunctionData(
-    functionFragment: "withdrawIds",
-    values: [BytesLike]
   ): string;
 
   decodeFunctionResult(
@@ -285,6 +286,7 @@ export interface EVMVaultInterface extends utils.Interface {
     functionFragment: "eip712Domain",
     data: BytesLike
   ): Result;
+  decodeFunctionResult(functionFragment: "excuteIds", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "execute", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "factory", data: BytesLike): Result;
   decodeFunctionResult(
@@ -328,21 +330,14 @@ export interface EVMVaultInterface extends utils.Interface {
     functionFragment: "userDeposited",
     data: BytesLike
   ): Result;
-  decodeFunctionResult(
-    functionFragment: "userLastActions",
-    data: BytesLike
-  ): Result;
   decodeFunctionResult(functionFragment: "vaultFees", data: BytesLike): Result;
   decodeFunctionResult(functionFragment: "withdraw", data: BytesLike): Result;
-  decodeFunctionResult(
-    functionFragment: "withdrawIds",
-    data: BytesLike
-  ): Result;
 
   events: {
     "Approval(address,address,uint256)": EventFragment;
-    "Deposited(address,uint256)": EventFragment;
+    "Deposited(bytes16,address,uint256)": EventFragment;
     "EIP712DomainChanged()": EventFragment;
+    "Executed(bytes16)": EventFragment;
     "Transfer(address,address,uint256)": EventFragment;
     "Withdrawn(bytes16,address,uint256)": EventFragment;
   };
@@ -350,6 +345,7 @@ export interface EVMVaultInterface extends utils.Interface {
   getEvent(nameOrSignatureOrTopic: "Approval"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Deposited"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "EIP712DomainChanged"): EventFragment;
+  getEvent(nameOrSignatureOrTopic: "Executed"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Transfer"): EventFragment;
   getEvent(nameOrSignatureOrTopic: "Withdrawn"): EventFragment;
 }
@@ -367,11 +363,12 @@ export type ApprovalEvent = TypedEvent<
 export type ApprovalEventFilter = TypedEventFilter<ApprovalEvent>;
 
 export interface DepositedEventObject {
+  depositId: string;
   user: string;
   amount: BigNumber;
 }
 export type DepositedEvent = TypedEvent<
-  [string, BigNumber],
+  [string, string, BigNumber],
   DepositedEventObject
 >;
 
@@ -385,6 +382,13 @@ export type EIP712DomainChangedEvent = TypedEvent<
 
 export type EIP712DomainChangedEventFilter =
   TypedEventFilter<EIP712DomainChangedEvent>;
+
+export interface ExecutedEventObject {
+  excuteId: string;
+}
+export type ExecutedEvent = TypedEvent<[string], ExecutedEventObject>;
+
+export type ExecutedEventFilter = TypedEventFilter<ExecutedEvent>;
 
 export interface TransferEventObject {
   from: string;
@@ -474,6 +478,7 @@ export interface EVMVault extends BaseContract {
     decimals(overrides?: CallOverrides): Promise<[number]>;
 
     deposit(
+      depositId: BytesLike,
       amount: BigNumberish,
       user: string,
       vaultTvl: BigNumberish,
@@ -496,7 +501,10 @@ export interface EVMVault extends BaseContract {
       }
     >;
 
+    excuteIds(arg0: BytesLike, overrides?: CallOverrides): Promise<[boolean]>;
+
     execute(
+      excuteId: BytesLike,
       targets: string[],
       data: BytesLike[],
       deadline: BigNumberish,
@@ -552,11 +560,6 @@ export interface EVMVault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<[BigNumber]>;
 
-    userLastActions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
-
     vaultFees(overrides?: CallOverrides): Promise<[BigNumber]>;
 
     withdraw(
@@ -570,11 +573,6 @@ export interface EVMVault extends BaseContract {
       signature: BytesLike,
       overrides?: Overrides & { from?: string }
     ): Promise<ContractTransaction>;
-
-    withdrawIds(
-      arg0: BytesLike,
-      overrides?: CallOverrides
-    ): Promise<[BigNumber]>;
   };
 
   DEPOSIT_TYPEHASH(overrides?: CallOverrides): Promise<string>;
@@ -614,6 +612,7 @@ export interface EVMVault extends BaseContract {
   decimals(overrides?: CallOverrides): Promise<number>;
 
   deposit(
+    depositId: BytesLike,
     amount: BigNumberish,
     user: string,
     vaultTvl: BigNumberish,
@@ -636,7 +635,10 @@ export interface EVMVault extends BaseContract {
     }
   >;
 
+  excuteIds(arg0: BytesLike, overrides?: CallOverrides): Promise<boolean>;
+
   execute(
+    excuteId: BytesLike,
     targets: string[],
     data: BytesLike[],
     deadline: BigNumberish,
@@ -689,8 +691,6 @@ export interface EVMVault extends BaseContract {
 
   userDeposited(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-  userLastActions(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
-
   vaultFees(overrides?: CallOverrides): Promise<BigNumber>;
 
   withdraw(
@@ -704,8 +704,6 @@ export interface EVMVault extends BaseContract {
     signature: BytesLike,
     overrides?: Overrides & { from?: string }
   ): Promise<ContractTransaction>;
-
-  withdrawIds(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
 
   callStatic: {
     DEPOSIT_TYPEHASH(overrides?: CallOverrides): Promise<string>;
@@ -742,6 +740,7 @@ export interface EVMVault extends BaseContract {
     decimals(overrides?: CallOverrides): Promise<number>;
 
     deposit(
+      depositId: BytesLike,
       amount: BigNumberish,
       user: string,
       vaultTvl: BigNumberish,
@@ -764,7 +763,10 @@ export interface EVMVault extends BaseContract {
       }
     >;
 
+    excuteIds(arg0: BytesLike, overrides?: CallOverrides): Promise<boolean>;
+
     execute(
+      excuteId: BytesLike,
       targets: string[],
       data: BytesLike[],
       deadline: BigNumberish,
@@ -817,11 +819,6 @@ export interface EVMVault extends BaseContract {
 
     userDeposited(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    userLastActions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     vaultFees(overrides?: CallOverrides): Promise<BigNumber>;
 
     withdraw(
@@ -835,8 +832,6 @@ export interface EVMVault extends BaseContract {
       signature: BytesLike,
       overrides?: CallOverrides
     ): Promise<void>;
-
-    withdrawIds(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   filters: {
@@ -851,14 +846,22 @@ export interface EVMVault extends BaseContract {
       value?: null
     ): ApprovalEventFilter;
 
-    "Deposited(address,uint256)"(
+    "Deposited(bytes16,address,uint256)"(
+      depositId?: BytesLike | null,
       user?: string | null,
       amount?: null
     ): DepositedEventFilter;
-    Deposited(user?: string | null, amount?: null): DepositedEventFilter;
+    Deposited(
+      depositId?: BytesLike | null,
+      user?: string | null,
+      amount?: null
+    ): DepositedEventFilter;
 
     "EIP712DomainChanged()"(): EIP712DomainChangedEventFilter;
     EIP712DomainChanged(): EIP712DomainChangedEventFilter;
+
+    "Executed(bytes16)"(excuteId?: BytesLike | null): ExecutedEventFilter;
+    Executed(excuteId?: BytesLike | null): ExecutedEventFilter;
 
     "Transfer(address,address,uint256)"(
       from?: string | null,
@@ -921,6 +924,7 @@ export interface EVMVault extends BaseContract {
     decimals(overrides?: CallOverrides): Promise<BigNumber>;
 
     deposit(
+      depositId: BytesLike,
       amount: BigNumberish,
       user: string,
       vaultTvl: BigNumberish,
@@ -931,7 +935,10 @@ export interface EVMVault extends BaseContract {
 
     eip712Domain(overrides?: CallOverrides): Promise<BigNumber>;
 
+    excuteIds(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
+
     execute(
+      excuteId: BytesLike,
       targets: string[],
       data: BytesLike[],
       deadline: BigNumberish,
@@ -984,11 +991,6 @@ export interface EVMVault extends BaseContract {
 
     userDeposited(arg0: string, overrides?: CallOverrides): Promise<BigNumber>;
 
-    userLastActions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<BigNumber>;
-
     vaultFees(overrides?: CallOverrides): Promise<BigNumber>;
 
     withdraw(
@@ -1002,8 +1004,6 @@ export interface EVMVault extends BaseContract {
       signature: BytesLike,
       overrides?: Overrides & { from?: string }
     ): Promise<BigNumber>;
-
-    withdrawIds(arg0: BytesLike, overrides?: CallOverrides): Promise<BigNumber>;
   };
 
   populateTransaction: {
@@ -1047,6 +1047,7 @@ export interface EVMVault extends BaseContract {
     decimals(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     deposit(
+      depositId: BytesLike,
       amount: BigNumberish,
       user: string,
       vaultTvl: BigNumberish,
@@ -1057,7 +1058,13 @@ export interface EVMVault extends BaseContract {
 
     eip712Domain(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
+    excuteIds(
+      arg0: BytesLike,
+      overrides?: CallOverrides
+    ): Promise<PopulatedTransaction>;
+
     execute(
+      excuteId: BytesLike,
       targets: string[],
       data: BytesLike[],
       deadline: BigNumberish,
@@ -1113,11 +1120,6 @@ export interface EVMVault extends BaseContract {
       overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
 
-    userLastActions(
-      arg0: string,
-      overrides?: CallOverrides
-    ): Promise<PopulatedTransaction>;
-
     vaultFees(overrides?: CallOverrides): Promise<PopulatedTransaction>;
 
     withdraw(
@@ -1130,11 +1132,6 @@ export interface EVMVault extends BaseContract {
       deadline: BigNumberish,
       signature: BytesLike,
       overrides?: Overrides & { from?: string }
-    ): Promise<PopulatedTransaction>;
-
-    withdrawIds(
-      arg0: BytesLike,
-      overrides?: CallOverrides
     ): Promise<PopulatedTransaction>;
   };
 }

@@ -1,12 +1,11 @@
 'use client';
 
 import { THINKING_MESSAGE, useChatSession } from '@/app-hooks/ai-agent';
-import { ChatSession } from '@/app-services/chat-session';
 import { ChatMessage } from '@/app-types/ai-agent';
 import { noop } from 'lodash';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { Button, Card, Collapse, InputGroup } from 'react-bootstrap';
 import BeatLoader from 'react-spinners/BeatLoader';
 import { useActiveAccount } from 'thirdweb/react';
@@ -90,12 +89,9 @@ interface ChatWidgetProps {
 
 const ChatWidget: React.FC<ChatWidgetProps> = ({ vaultId }) => {
 	const router = useRouter();
-	const sessionRef = useRef(ChatSession.create());
-	const sessionId = sessionRef.current.getSessionId();
 	const account = useActiveAccount();
 
 	const [open, setOpen] = useState(false);
-	const [chatActivated, setChatActivated] = useState(false);
 	const [isAnimating, setIsAnimating] = useState(false);
 
 	const {
@@ -105,19 +101,17 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ vaultId }) => {
 		isThinking,
 		commitMessageDraft,
 		executeAction,
-	} = useChatSession(sessionId, {
-		persistEnabled: chatActivated,
+	} = useChatSession({
 		vaultId,
 	});
 
 	const handleSend = async () => {
 		if (!messageDraft.trim() || isThinking || isAnimating) return;
-		setChatActivated(true);
 		await commitMessageDraft();
 	};
 
 	const onExpandChat = () => {
-		router.push(`/ai-agent/chat/${sessionId}?vault_id=${vaultId}`);
+		router.push(`/ai-agent/chat?vault_id=${vaultId}`);
 	};
 
 	const renderedMessages = useMemo(() => {

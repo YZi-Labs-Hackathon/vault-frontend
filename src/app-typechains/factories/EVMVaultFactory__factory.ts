@@ -11,17 +11,6 @@ import type {
 
 const _abi = [
   {
-    inputs: [
-      {
-        internalType: "address",
-        name: "_signer",
-        type: "address",
-      },
-    ],
-    stateMutability: "nonpayable",
-    type: "constructor",
-  },
-  {
     inputs: [],
     name: "ECDSAInvalidSignature",
     type: "error",
@@ -50,7 +39,12 @@ const _abi = [
   },
   {
     inputs: [],
-    name: "InvalidShortString",
+    name: "InvalidInitialization",
+    type: "error",
+  },
+  {
+    inputs: [],
+    name: "NotInitializing",
     type: "error",
   },
   {
@@ -87,20 +81,22 @@ const _abi = [
     type: "error",
   },
   {
-    inputs: [
-      {
-        internalType: "string",
-        name: "str",
-        type: "string",
-      },
-    ],
-    name: "StringTooLong",
-    type: "error",
-  },
-  {
     anonymous: false,
     inputs: [],
     name: "EIP712DomainChanged",
+    type: "event",
+  },
+  {
+    anonymous: false,
+    inputs: [
+      {
+        indexed: false,
+        internalType: "uint64",
+        name: "version",
+        type: "uint64",
+      },
+    ],
+    name: "Initialized",
     type: "event",
   },
   {
@@ -293,6 +289,90 @@ const _abi = [
     type: "function",
   },
   {
+    inputs: [
+      {
+        components: [
+          {
+            internalType: "string",
+            name: "name",
+            type: "string",
+          },
+          {
+            internalType: "string",
+            name: "symbol",
+            type: "string",
+          },
+          {
+            internalType: "contract IERC20",
+            name: "underlying",
+            type: "address",
+          },
+          {
+            internalType: "contract IProtocolHelper",
+            name: "protocolHelper",
+            type: "address",
+          },
+          {
+            internalType: "address",
+            name: "authority",
+            type: "address",
+          },
+          {
+            internalType: "uint256",
+            name: "initDepositAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "minDepositAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "maxDepositAmount",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "deadline",
+            type: "uint256",
+          },
+        ],
+        internalType: "struct IEVMVaultFactory.CreateNewVaultParams",
+        name: "params",
+        type: "tuple",
+      },
+      {
+        internalType: "bytes",
+        name: "signature",
+        type: "bytes",
+      },
+    ],
+    name: "getVaultAddress",
+    outputs: [
+      {
+        internalType: "address",
+        name: "",
+        type: "address",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "address",
+        name: "_signer",
+        type: "address",
+      },
+    ],
+    name: "initialize",
+    outputs: [],
+    stateMutability: "nonpayable",
+    type: "function",
+  },
+  {
     inputs: [],
     name: "owner",
     outputs: [
@@ -349,32 +429,6 @@ const _abi = [
     name: "updateSigner",
     outputs: [],
     stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "_waitTime",
-        type: "uint256",
-      },
-    ],
-    name: "updateWaitTime",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "waitTime",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
     type: "function",
   },
 ] as const;

@@ -23,8 +23,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
 	const [isAuthCoreResolved, setIsAuthCoreResolved] = useState<boolean>(false);
 
-	console.debug('session', session);
-
 	const requestSignature = useOnEventCallback(async () => {
 		if (!address || !account) {
 			throw new Error('Wallet is not available');

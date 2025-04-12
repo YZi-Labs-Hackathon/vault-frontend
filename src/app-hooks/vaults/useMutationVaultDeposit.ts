@@ -41,9 +41,10 @@ export const useMutationVaultDeposit = () => {
 			const signer = await getSignerFromAccount(account);
 			const vaultContract = EVMVault__factory.connect(params.vaultAddress, signer);
 			const { signature, vaultParam } = depositSignature;
-			const { amount, userAddress, vaultTvl } = vaultParam;
+			const { amount, userAddress, vaultTvl, depositId } = vaultParam;
 
 			const tx = await vaultContract.deposit(
+				depositId,
 				amount,
 				userAddress,
 				vaultTvl,
