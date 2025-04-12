@@ -5,7 +5,7 @@ import { useMemo } from 'react';
 import { getVaultTableColumns, IVaultTableItem } from './vault-table-helpers';
 
 const VaultTable = () => {
-	const { data: vaults } = useQueryVaultList({
+	const { data: vaults, isLoading } = useQueryVaultList({
 		filterStatus: [VaultStatus.ACTIVE, VaultStatus.PAUSE, VaultStatus.CLOSE].join(','),
 	});
 
@@ -26,7 +26,14 @@ const VaultTable = () => {
 		);
 	}, [vaults]);
 
-	return <Table bordered columns={getVaultTableColumns()} data={vaultTableData} />;
+	return (
+		<Table
+			isLoading={isLoading}
+			bordered
+			columns={getVaultTableColumns()}
+			data={vaultTableData}
+		/>
+	);
 };
 
 export default VaultTable;

@@ -1,6 +1,11 @@
 'use client';
 
+import { ExpandableDescription } from '@/app-components/common/ExpandableDescription';
 import { PageContainer } from '@/app-components/layout/PageContainer';
+import { getShortAddress } from '@/app-helpers/address';
+import { formatCurrency } from '@/app-helpers/number';
+import { useQueryVaultDetails } from '@/app-hooks/vaults';
+import { useQueryVaultProtocol } from '@/app-hooks/vaults/useQueryVaultProtocol';
 import Link from 'next/link';
 import { useState } from 'react';
 import {
@@ -13,6 +18,7 @@ import {
 	InputGroup,
 	Modal,
 	Row,
+	Spinner,
 } from 'react-bootstrap';
 
 interface VaultDetailsProps {
@@ -20,21 +26,45 @@ interface VaultDetailsProps {
 }
 
 const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
-	const [myVault, setMyVault] = useState(true);
 	const [show, setShow] = useState(false);
+
+	const { data: vault, isLoading } = useQueryVaultDetails({
+		contractAddress: address,
+	});
+
+	const { data: vaultProtocol } = useQueryVaultProtocol(
+		{
+			vaultId: vault?.id,
+		},
+		{
+			enabled: !!vault?.id,
+			networkMode: 'offlineFirst',
+		},
+	);
+
+	if (!vault || isLoading) {
+		return (
+			<div
+				className="w-full d-flex justify-content-center align-items-center"
+				style={{ height: '100dvh' }}
+			>
+				<Spinner style={{ borderWidth: '2px' }} />
+			</div>
+		);
+	}
 
 	return (
 		<PageContainer>
 			<Container className="py-5">
 				<Breadcrumb>
 					<Breadcrumb.Item href="/">Home</Breadcrumb.Item>
-					<Breadcrumb.Item active>Vault-ABC</Breadcrumb.Item>
+					<Breadcrumb.Item active>{vault.name}</Breadcrumb.Item>
 				</Breadcrumb>
 				<Row className="mb-4">
 					<Col>
-						<h1>NX Finance JLP Delta Neutral Vaul</h1>
+						<h1>{vault.name}</h1>
 						<div>
-							<span>Created by 0x0000...0000</span> •{' '}
+							<span>Created by {getShortAddress(vault.creator.address)}</span> •{' '}
 							<span className="badge bg-success">Deposits open</span>
 						</div>
 					</Col>
@@ -47,26 +77,30 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 				<Row className="overall g-3">
 					<Col>
 						<div className="bg-light p-3">
-							<div className="small text-secondary">TVL / Max Capacity</div>
-							<div className="fs-5 fw-medium">$56.1M / $100M</div>
+							<div className="small text-secondary">TVL</div>
+							<div className="fs-5 fw-medium">{formatCurrency(vault.totalLock)}</div>
 						</div>
 					</Col>
 					<Col>
 						<div className="bg-light p-3">
-							<div className="small text-secondary">Vault PNL</div>
-							<div className="fs-5 fw-medium">$12.33</div>
+							<div className="small text-secondary">PnL</div>
+							<div className="fs-5 fw-medium">{formatCurrency(vault.allTimePnl)}</div>
 						</div>
 					</Col>
 					<Col>
 						<div className="bg-light p-3">
-							<div className="small text-secondary">your deposit</div>
-							<div className="fs-5 fw-medium">$1,231.55</div>
+							<div className="small text-secondary">Your Deposit</div>
+							<div className="fs-5 fw-medium">
+								{vault.yourDeposit ? formatCurrency(vault.yourDeposit) : '-'}
+							</div>
 						</div>
 					</Col>
 					<Col>
 						<div className="bg-light p-3">
-							<div className="small text-secondary">Your PNL</div>
-							<div className="fs-5 fw-medium">$23.55</div>
+							<div className="small text-secondary">Your PnL</div>
+							<div className="fs-5 fw-medium">
+								{vault.yourPnl ? formatCurrency(vault.yourPnl) : '-'}
+							</div>
 						</div>
 					</Col>
 				</Row>
@@ -79,29 +113,27 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 							<Card.Body>
 								<dl className="row gy-1">
 									<dt className="col-sm-3">Name:</dt>
-									<dd className="col-sm-9">NX Finance JLP Delta Neutral Vaul</dd>
+									<dd className="col-sm-9">{vault.name}</dd>
+
 									<dt className="col-sm-3">Protocol:</dt>
-									<dd className="col-sm-9">Venus, Aave, Drift</dd>
+									<dd className="col-sm-9">{vaultProtocol?.name}</dd>
+
 									<dt className="col-sm-3">Token:</dt>
-									<dd className="col-sm-9">USDC</dd>
+									<dd className="col-sm-9">{vault.token.symbol}</dd>
+
 									<dt className="col-sm-3">Network:</dt>
-									<dd className="col-sm-9">BNB Smart Chain</dd>
-									<dt className="col-sm-3">Description:</dt>
-									<dd className="col-sm-9">
-										An AI-driven vault that responds to real-time market changes:
-										<ul>
-											<li>Staking take place within the Venus protocol.</li>
-											<li>
-												Adaptive Strategy: Uses advanced algorithms to optimize
-												performance, automatically adjusting staking allocations based on
-												market signals.
-											</li>
-											<li>
-												Balance of Security & Growth: Prioritizes capital preservation
-												while aiming for above-average yields in varying market
-												conditions.
-											</li>
-										</ul>
+									<dd className="col-sm-9">{vault.chain.name}</dd>
+
+									<dt className="col-sm-12">Description:</dt>
+									<dd className="col-sm-12">
+										<ExpandableDescription
+											id="vault-description"
+											text={vault.description ?? ''}
+											more={'View more'}
+											less={'View less'}
+											className="small text-secondary"
+											anchorClass="d-inline-block link-primary cursor-pointer"
+										/>
 									</dd>
 								</dl>
 							</Card.Body>
@@ -114,7 +146,7 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 							</Card.Header>
 							<Card.Body>
 								<Form.Group className="mb-4">
-									<Form.Label>Amout</Form.Label>
+									<Form.Label>Amount</Form.Label>
 									<InputGroup size="lg" className="mb-3">
 										<Form.Control type="number" defaultValue={10} placeholder="0" />
 										<InputGroup.Text>USDC</InputGroup.Text>

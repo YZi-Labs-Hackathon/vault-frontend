@@ -40,7 +40,7 @@ export default async function RootLayout({
 				content="automate your trading effortlessly. explore, invest, and let AI optimize your returns!"
 			/>
 
-			<body>
+			<body suppressHydrationWarning>
 				<NProgressProvider>
 					<ReactQueryProvider>
 						<FeatureFlagProvider>

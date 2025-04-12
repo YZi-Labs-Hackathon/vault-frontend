@@ -42,6 +42,7 @@ export enum VaultProtocolService {
 	venus = 'venus',
 	apex = 'apex',
 	drift = 'drift',
+	pancake = 'pancake',
 }
 
 export interface VaultProtocol {

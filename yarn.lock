@@ -1140,15 +1140,6 @@
   dependencies:
     "@lit-labs/ssr-dom-shim" "^1.0.0"
 
-"@mirailabs-co/types@^1.0.69":
-  version "1.0.69"
-  resolved "https://npm.pkg.github.com/download/@mirailabs-co/types/1.0.69/f86e7bad0b79ed2e70293b9a3fd79c09e70ea950#f86e7bad0b79ed2e70293b9a3fd79c09e70ea950"
-  integrity sha512-lMMKZ3ChYTwzMiSLY13mMk1itWX797SbjaxrB3+0d7c+ZEGrF8gUUv0JobFEpNZxa3SmrnQ7BkGu3Xu50WLJEw==
-  dependencies:
-    events "^3.3.0"
-    fast-safe-stringify "^2.1.1"
-    loglevel "^1.8.0"
-
 "@motionone/animation@^10.15.1", "@motionone/animation@^10.18.0":
   version "10.18.0"
   resolved "https://registry.yarnpkg.com/@motionone/animation/-/animation-10.18.0.tgz#868d00b447191816d5d5cf24b1cafa144017922b"
@@ -4883,11 +4874,6 @@ log-symbols@^6.0.0:
   dependencies:
     chalk "^5.3.0"
     is-unicode-supported "^1.3.0"
-
-loglevel@^1.8.0:
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/loglevel/-/loglevel-1.9.2.tgz#c2e028d6c757720107df4e64508530db6621ba08"
-  integrity sha512-HgMmCqIJSAKqo68l0rS2AanEWfkxaZ5wNiEFb5ggm08lDs9Xl2KxBlX3PTcaD2chBM1gXAYf491/M2Rv8Jwayg==
 
 loose-envify@^1.0.0, loose-envify@^1.4.0:
   version "1.4.0"

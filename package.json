@@ -58,7 +58,6 @@
 	},
 	"devDependencies": {
 		"@eslint/eslintrc": "^3",
-		"@mirailabs-co/types": "^1.0.69",
 		"@typechain/ethers-v5": "^11.1.2",
 		"@types/eth-url-parser": "^1.0.3",
 		"@types/jsonwebtoken": "^9.0.9",

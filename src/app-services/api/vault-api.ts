@@ -1,9 +1,13 @@
 import { get } from '@/app-helpers/misc';
 import { ApiResponse } from '@/app-types/common';
-import { VaultListItem } from '@/app-types/vault';
+import { Vault, VaultListItem, VaultProtocol } from '@/app-types/vault';
 import { isNil, omitBy } from 'lodash';
 import { axiosAPI } from './transport';
-import { GetVaultsFilterParams } from './vault-api.types';
+import {
+	GetVaultDetailsParams,
+	GetVaultProtocolsParams,
+	GetVaultsFilterParams,
+} from './vault-api.types';
 
 class VaultApiService {
 	async getVaultsPublic(filter?: GetVaultsFilterParams) {
@@ -22,6 +26,29 @@ class VaultApiService {
 			params: omitBy(filter || {}, isNil),
 		});
 		return get(response, (d) => d.data.data, []) as VaultListItem[];
+	}
+
+	async getVaultDetailsPublic(filter?: GetVaultDetailsParams) {
+		const response = await axiosAPI.get<ApiResponse<Vault>>('/api/vault/detail/public', {
+			params: omitBy(filter || {}, isNil),
+			skip_auth: true,
+		});
+		return get(response, (d) => d.data.data, {} as Vault) as Vault;
+	}
+
+	async getVaultDetailsWithAuth(filter?: GetVaultDetailsParams) {
+		const response = await axiosAPI.get<ApiResponse<Vault>>('/api/vault/detail', {
+			params: omitBy(filter || {}, isNil),
+		});
+		return get(response, (d) => d.data.data, {} as Vault) as Vault;
+	}
+
+	async getVaultProtocols(filter?: GetVaultProtocolsParams) {
+		const response = await axiosAPI.get<ApiResponse<VaultProtocol[]>>('/api/protocol', {
+			params: omitBy(filter, isNil),
+			skip_auth: true,
+		});
+		return get(response, (d) => d.data.data, []) as VaultProtocol[];
 	}
 }
 

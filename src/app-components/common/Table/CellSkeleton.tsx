@@ -11,11 +11,12 @@ const CellSkeleton = (props: CellSkeletonProps) => {
 	const {
 		width = '100%',
 		height = 20,
-		backgroundColor = '#333',
-		foregroundColor = '#555',
+		backgroundColor = '#f0f0f0',
+		foregroundColor = '#e0e0e0',
 	} = props;
+
 	return (
-		<div>
+		<>
 			<ContentLoader
 				width={width}
 				height={height}
@@ -24,7 +25,7 @@ const CellSkeleton = (props: CellSkeletonProps) => {
 			>
 				<rect x="0" y="0" rx="4" ry="4" width={width} height={height} />
 			</ContentLoader>
-		</div>
+		</>
 	);
 };
 
