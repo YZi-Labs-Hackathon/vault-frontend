@@ -5,8 +5,9 @@ import { ChatSession } from '@/app-services/chat-session';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { Button, Card, Collapse, Form, InputGroup, Spinner } from 'react-bootstrap';
+import { Button, Card, Collapse, InputGroup } from 'react-bootstrap';
 import BeatLoader from 'react-spinners/BeatLoader';
+import ChatInput from './ChatInput';
 import MessageRenderer from './MessageRenderer';
 
 // Chat bubbles
@@ -19,7 +20,7 @@ const ChatLeft = ({ content, animateChar, onAnimateStart, onAnimateDone }) => (
 			alt="vault"
 			className="flex-shrink-0 mb-1"
 		/>
-		<div className="rounded-3 px-3 py-2 bg-light">
+		<div className="rounded-3 px-3 py-2 bg-light text-break">
 			<MessageRenderer
 				content={content}
 				animateChar={animateChar}
@@ -32,7 +33,7 @@ const ChatLeft = ({ content, animateChar, onAnimateStart, onAnimateDone }) => (
 
 const ChatRight = ({ content }) => (
 	<div className="d-flex gap-2 align-items-end">
-		<div className="rounded-3 px-3 py-2 bg-primary text-white ms-auto">
+		<div className="rounded-3 px-3 py-2 bg-primary text-white ms-auto text-break">
 			<MessageRenderer content={content} />
 		</div>
 	</div>
@@ -154,11 +155,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ vaultId }) => {
 
 						<Card.Footer>
 							<InputGroup>
-								<Form.Control
-									placeholder="Type to chat..."
+								<ChatInput
 									value={messageDraft}
 									onChange={(e) => setMessageDraft(e.target.value)}
-									onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+									onSubmit={commitMessageDraft}
 									disabled={isInputControlsDisabled}
 								/>
 								<Button

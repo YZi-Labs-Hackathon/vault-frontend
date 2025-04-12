@@ -1,9 +1,10 @@
 import { THINKING_MESSAGE, useChatSession } from '@/app-hooks/ai-agent';
-import { Button, Card, Form, Image, InputGroup } from 'react-bootstrap';
-import BeatLoader from 'react-spinners/BeatLoader';
-import MessageRenderer from './MessageRenderer';
 import { noop } from 'lodash';
 import { useState } from 'react';
+import { Button, Card, Image, InputGroup } from 'react-bootstrap';
+import BeatLoader from 'react-spinners/BeatLoader';
+import ChatInput from './ChatInput';
+import MessageRenderer from './MessageRenderer';
 
 // Bot message
 const ChatLeft = ({ content, animateChar, onAnimateStart, onAnimateDone }) => (
@@ -15,7 +16,7 @@ const ChatLeft = ({ content, animateChar, onAnimateStart, onAnimateDone }) => (
 			alt="vault"
 			className="flex-shrink-0 mb-1"
 		/>
-		<div className="rounded-3 px-3 py-2 bg-light">
+		<div className="rounded-3 px-3 py-2 bg-light text-break">
 			<MessageRenderer
 				content={content}
 				animateChar={animateChar}
@@ -29,7 +30,7 @@ const ChatLeft = ({ content, animateChar, onAnimateStart, onAnimateDone }) => (
 // User message
 const ChatRight = ({ content }) => (
 	<div className="d-flex gap-2 align-items-end">
-		<div className="rounded-3 px-3 py-2 bg-primary text-white ms-auto">
+		<div className="rounded-3 px-3 py-2 bg-primary text-white ms-auto text-break">
 			<MessageRenderer content={content} />
 		</div>
 	</div>
@@ -92,13 +93,13 @@ const ChatContainer: React.FC<ChatContainerProps> = ({ sessionId, vaultId }) => 
 
 			<Card.Footer className="py-3">
 				<InputGroup>
-					<Form.Control
-						placeholder="Type to chat ..."
+					<ChatInput
 						value={messageDraft}
 						onChange={(e) => setMessageDraft(e.target.value)}
-						onKeyDown={(e) => e.key === 'Enter' && commitMessageDraft()}
+						onSubmit={commitMessageDraft}
 						disabled={isInputControlsDisabled}
 					/>
+
 					<Button
 						variant="primary"
 						onClick={commitMessageDraft}
