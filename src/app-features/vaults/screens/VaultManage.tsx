@@ -1,22 +1,21 @@
 'use client';
 import { PageContainer } from '@/app-components/layout/PageContainer';
-import { getShortAddress } from '@/app-helpers/address';
+import { getSignerFromAccount } from '@/app-contexts/thirdweb';
+import { areAddressesEqual, getShortAddress } from '@/app-helpers/address';
+import { getErrorMessage } from '@/app-helpers/errors';
 import { get } from '@/app-helpers/misc';
 import { formatCurrency } from '@/app-helpers/number';
 import { useQueryVaultDetails } from '@/app-hooks/vaults';
+import useMutationCreateVaultAction from '@/app-hooks/vaults/useMutationCreateVaultAction';
 import { useQueryVaultProtocol } from '@/app-hooks/vaults/useQueryVaultProtocol';
+import { EVMVault__factory } from '@/app-typechains';
 import { VaultProtocolService } from '@/app-types/vault';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
-import {
-	Breadcrumb,
-	Card,
-	Col,
-	Container,
-	ListGroup,
-	Row,
-	Spinner,
-} from 'react-bootstrap';
+import { Breadcrumb, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
+import { toast } from 'react-toastify';
+import { useActiveAccount } from 'thirdweb/react';
 
 interface VaultManageProps {
 	address: string;
@@ -24,6 +23,9 @@ interface VaultManageProps {
 
 const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 	const iframeRef = useRef<HTMLIFrameElement>(null);
+	const account = useActiveAccount();
+	const router = useRouter();
+	const { mutateAsync: createVaultAction } = useMutationCreateVaultAction();
 
 	const { data: vault, isLoading } = useQueryVaultDetails({
 		contractAddress: address,
@@ -54,6 +56,38 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 		return '';
 	};
 
+	const doVaultAction = async ({ to, data }: { to: string; data: string }) => {
+		if (!to || !data) {
+			throw new Error('Could not send transaction. Missing parameters!');
+		}
+
+		if (!account) {
+			throw new Error('Please connect to your wallet first');
+		}
+
+		if (!vault) {
+			throw new Error('Not found vault information');
+		}
+
+		const {
+			targets,
+			data: targetData,
+			deadline,
+			signature,
+		} = await createVaultAction({
+			dataRaw: data,
+			to: to,
+			service: vaultProtocol?.service ?? VaultProtocolService.venus,
+		});
+
+		const signer = await getSignerFromAccount(account);
+		const vaultContract = EVMVault__factory.connect(vault.contractAddress, signer);
+		const tx = await vaultContract.execute(targets, targetData, deadline, signature);
+		await tx.wait();
+
+		return tx.hash;
+	};
+
 	const handleEthereumMessage = async (event: MessageEvent) => {
 		const type = event.data.type;
 		const contentWindow = iframeRef.current?.contentWindow!;
@@ -75,10 +109,41 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 				},
 				'*',
 			);
+		} else if (type === 'eth_sendTransaction') {
+			try {
+				const { to, data } = get(event, (d) => d.data.params[0], {});
+				const txHash = await doVaultAction({
+					to: to,
+					data: data,
+				});
+				contentWindow.postMessage(
+					{
+						type: 'eth_sendTransaction_response',
+						result: txHash,
+						transactionId: event.data.transactionId ?? '',
+					},
+					'*',
+				);
+			} catch (e) {
+				const error = getErrorMessage(e);
+				toast.error(error, {
+					autoClose: 3000,
+				});
+				contentWindow.postMessage(
+					{
+						type: 'eth_sendTransaction_response',
+						error: error,
+						transactionId: event.data.transactionId ?? '',
+					},
+					'*',
+				);
+			}
 		}
 	};
 
 	useEffect(() => {
+		if (!account || !vault || !vaultProtocol) return;
+
 		const handleMessage = async (event: MessageEvent) => {
 			if (iframeRef.current && iframeRef.current.contentWindow) {
 				handleEthereumMessage(event);
@@ -87,7 +152,15 @@ const VaultManage: React.FC<VaultManageProps> = ({ address }) => {
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, []);
+	}, [account, vault, vaultProtocol]);
+
+	useEffect(() => {
+		if (!vault || !account) return;
+
+		if (!areAddressesEqual(account.address, vault.creator.address)) {
+			router.back();
+		}
+	}, [vault, account]);
 
 	if (!vault || isLoading) {
 		return (

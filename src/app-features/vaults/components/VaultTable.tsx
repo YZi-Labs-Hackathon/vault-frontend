@@ -1,12 +1,13 @@
 import { Table } from '@/app-components/common/Table';
 import { useQueryVaultList } from '@/app-hooks/vaults';
-import { VaultStatus } from '@/app-types/vault';
+import { VaultProtocolService, VaultStatus } from '@/app-types/vault';
 import { useMemo } from 'react';
 import { getVaultTableColumns, IVaultTableItem } from './vault-table-helpers';
 
 const VaultTable = () => {
 	const { data: vaults, isLoading } = useQueryVaultList({
 		filterStatus: [VaultStatus.ACTIVE, VaultStatus.PAUSE, VaultStatus.CLOSE].join(','),
+		services: [VaultProtocolService.venus, VaultProtocolService.pancake].join(','),
 	});
 
 	const vaultTableData = useMemo(() => {

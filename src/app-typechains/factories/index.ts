@@ -2,3 +2,5 @@
 /* tslint:disable */
 /* eslint-disable */
 export { ERC20__factory } from "./ERC20__factory";
+export { EVMVault__factory } from "./EVMVault__factory";
+export { EVMVaultFactory__factory } from "./EVMVaultFactory__factory";

@@ -2,31 +2,21 @@
 
 import { ExpandableDescription } from '@/app-components/common/ExpandableDescription';
 import { PageContainer } from '@/app-components/layout/PageContainer';
-import { getShortAddress } from '@/app-helpers/address';
+import { areAddressesEqual, getShortAddress } from '@/app-helpers/address';
 import { formatCurrency } from '@/app-helpers/number';
 import { useQueryVaultDetails } from '@/app-hooks/vaults';
 import { useQueryVaultProtocol } from '@/app-hooks/vaults/useQueryVaultProtocol';
 import Link from 'next/link';
-import { useState } from 'react';
-import {
-	Breadcrumb,
-	Button,
-	Card,
-	Col,
-	Container,
-	Form,
-	InputGroup,
-	Modal,
-	Row,
-	Spinner,
-} from 'react-bootstrap';
+import { Breadcrumb, Card, Col, Container, Row, Spinner } from 'react-bootstrap';
+import { useActiveAccount } from 'thirdweb/react';
+import DepositCard from '../components/DepositCard';
 
 interface VaultDetailsProps {
 	address: string;
 }
 
 const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
-	const [show, setShow] = useState(false);
+	const account = useActiveAccount();
 
 	const { data: vault, isLoading } = useQueryVaultDetails({
 		contractAddress: address,
@@ -41,6 +31,11 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 			networkMode: 'offlineFirst',
 		},
 	);
+
+	const isVaultCreator = () => {
+		if (!vault || !account) return false;
+		return areAddressesEqual(account.address, vault.creator.address);
+	};
 
 	if (!vault || isLoading) {
 		return (
@@ -69,9 +64,11 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 						</div>
 					</Col>
 					<Col xs="auto">
-						<Link href={`/vault/${address}/manage`} className="btn btn-outline-primary">
-							Manage Vault
-						</Link>
+						{isVaultCreator() ? (
+							<Link href={`/vault/${address}/manage`} className="btn btn-outline-primary">
+								Manage Vault
+							</Link>
+						) : null}
 					</Col>
 				</Row>
 				<Row className="overall g-3">
@@ -140,42 +137,10 @@ const VaultDetails: React.FC<VaultDetailsProps> = ({ address }) => {
 						</Card>
 					</Col>
 					<Col md="4">
-						<Card>
-							<Card.Header>
-								<Card.Title>Deposit</Card.Title>
-							</Card.Header>
-							<Card.Body>
-								<Form.Group className="mb-4">
-									<Form.Label>Amount</Form.Label>
-									<InputGroup size="lg" className="mb-3">
-										<Form.Control type="number" defaultValue={10} placeholder="0" />
-										<InputGroup.Text>USDC</InputGroup.Text>
-									</InputGroup>
-								</Form.Group>
-								<Button className="w-100" size="lg" onClick={() => setShow(true)}>
-									Deposit
-								</Button>
-							</Card.Body>
-						</Card>
+						<DepositCard vault={vault} />
 					</Col>
 				</Row>
 			</Container>
-
-			<Modal show={show} onHide={() => setShow(false)} centered>
-				<Modal.Header closeButton className="border-0 pb-0" />
-				<Modal.Body className="text-center">
-					<div className="display-3">✔</div>
-					<h4>Deposit successful</h4>
-					<p className="mb-4">
-						Please wait a few minutes for the funds to appear in the vault.
-					</p>
-					<div className="mb-3">
-						<Button variant="outline-primary" className="px-5">
-							Got it!
-						</Button>
-					</div>
-				</Modal.Body>
-			</Modal>
 		</PageContainer>
 	);
 };

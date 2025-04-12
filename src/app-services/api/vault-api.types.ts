@@ -8,6 +8,7 @@ export interface GetVaultsFilterParams {
 	page?: number;
 	limit?: number;
 	filterStatus?: string;
+	services?: string;
 }
 
 export interface GetVaultDetailsParams {
@@ -20,4 +21,37 @@ export interface GetVaultProtocolsParams {
 	id?: string;
 	vaultId?: string;
 	name?: string;
+}
+
+export interface VaultDepositParams {
+	amount: string;
+	vaultId: string;
+}
+
+export interface VaultDepositSignatureParams {
+	amount: string;
+	userAddress: string;
+	vaultTvl: string;
+}
+
+export interface VaultDepositSignatureSignature {
+	deadline: string;
+	signature: string;
+}
+export interface VaultDepositSignature {
+	vaultParam: VaultDepositSignatureParams;
+	signature: VaultDepositSignatureSignature;
+}
+
+export interface CreateVaultActionParams {
+	service: string;
+	to: string;
+	dataRaw: string;
+}
+
+export interface CreateVaultActionData {
+	targets: string[];
+	data: string[];
+	deadline: string;
+	signature: string;
 }

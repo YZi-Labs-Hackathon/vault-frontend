@@ -7,6 +7,7 @@ import { TWProvider } from '@/app-contexts/thirdweb';
 import { ServerPropsWithLocale } from '@/app-types/common';
 import { Metadata, Viewport } from 'next';
 import i18nConfig from '../../i18n-config';
+import { ToastContainer } from 'react-toastify';
 
 export const viewport: Viewport = {
 	width: 'device-width',
@@ -48,6 +49,13 @@ export default async function RootLayout({
 						</FeatureFlagProvider>
 					</ReactQueryProvider>
 				</NProgressProvider>
+
+				<ToastContainer
+					theme="light"
+					hideProgressBar
+					closeButton={false}
+					autoClose={3000}
+				/>
 			</body>
 		</html>
 	);

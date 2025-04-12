@@ -2,5 +2,9 @@
 /* tslint:disable */
 /* eslint-disable */
 export type { ERC20 } from "./ERC20";
+export type { EVMVault } from "./EVMVault";
+export type { EVMVaultFactory } from "./EVMVaultFactory";
 export * as factories from "./factories";
 export { ERC20__factory } from "./factories/ERC20__factory";
+export { EVMVault__factory } from "./factories/EVMVault__factory";
+export { EVMVaultFactory__factory } from "./factories/EVMVaultFactory__factory";

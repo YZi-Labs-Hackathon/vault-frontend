@@ -1,5 +1,6 @@
 'use client';
 import { bnbChain } from '@/app-constants/blockchain';
+import { ethers } from 'ethers';
 import React from 'react';
 import { createThirdwebClient } from 'thirdweb';
 import {

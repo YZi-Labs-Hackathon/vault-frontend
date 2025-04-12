@@ -9,6 +9,7 @@ import {
 	useDisconnect,
 } from 'thirdweb/react';
 import { APP_CHAINS, CHAIN, twClient, TWContext, WALLETS } from './tw-context';
+import { ethers5Adapter } from 'thirdweb/adapters/ethers5';
 
 export interface TWProviderProps {
 	children: React.ReactNode;

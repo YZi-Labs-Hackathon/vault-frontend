@@ -4,9 +4,13 @@ import { Vault, VaultListItem, VaultProtocol } from '@/app-types/vault';
 import { isNil, omitBy } from 'lodash';
 import { axiosAPI } from './transport';
 import {
+	CreateVaultActionData,
+	CreateVaultActionParams,
 	GetVaultDetailsParams,
 	GetVaultProtocolsParams,
 	GetVaultsFilterParams,
+	VaultDepositParams,
+	VaultDepositSignature,
 } from './vault-api.types';
 
 class VaultApiService {
@@ -49,6 +53,36 @@ class VaultApiService {
 			skip_auth: true,
 		});
 		return get(response, (d) => d.data.data, []) as VaultProtocol[];
+	}
+
+	public async getVaultDepositSignature(
+		params: VaultDepositParams,
+	): Promise<VaultDepositSignature> {
+		const response = await axiosAPI.post<ApiResponse<VaultDepositSignature>>(
+			'/api/vault/depositor/deposit',
+			params,
+		);
+		return get(
+			response,
+			(d) => d.data.data,
+			{} as VaultDepositSignature,
+		) as VaultDepositSignature;
+	}
+
+	public async syncDepositTransaction(vaultAddress: string, txHash: string) {
+		await axiosAPI.post(`/api/webhook/deposit/${vaultAddress}/${txHash}`);
+	}
+
+	public async createVaultAction(params: CreateVaultActionParams) {
+		const response = await axiosAPI.post<ApiResponse<CreateVaultActionData>>(
+			'/api/vault/action',
+			params,
+		);
+		return get(
+			response,
+			(d) => d.data.data,
+			{} as CreateVaultActionData,
+		) as CreateVaultActionData;
 	}
 }
 
